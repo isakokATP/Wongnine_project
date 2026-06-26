@@ -91,6 +91,7 @@ const focusRestaurant = (restaurant) => {
     <div class="hidden md:block w-2/3 bg-slate-100 relative z-0">
       <ClientOnly>
         <GoogleMap
+<!-- dont forget to add google map api key -->
           ref="mapRef"
           api-key="..." 
           style="width: 100%; height: 100%"
