@@ -1,0 +1,12 @@
+# Node
+node_modules
+dist
+.nuxt
+.output
+
+# Env
+.env
+
+# อื่นๆ
+.DS_Store
+*.log
