@@ -90,7 +90,7 @@ const focusRestaurant = (restaurant) => {
       <ClientOnly>
         <GoogleMap
           ref="mapRef"
-          api-key="AIzaSyDOzYo8WoJLrQzbOFCQlgQ8lwjPrYpLx1Y" 
+          api-key="" 
           style="width: 100%; height: 100%"
           :center="center"
           :zoom="zoom"
