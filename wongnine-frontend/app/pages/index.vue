@@ -1,12 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { GoogleMap, Marker } from 'vue3-google-map'
+import { GoogleMap, Marker, InfoWindow } from 'vue3-google-map'
 
 const searchQuery = ref('')
 const mapRef = ref(null)
-
 const zoom = ref(13)
 const center = ref({ lat: 13.778021, lng: 100.571930 })
+
+const activeRestaurantId = ref(null)
 
 const { data: response, pending, error } = await useFetch('http://localhost:3001/restaurants', {
   query: { page: 1, limit: 10, search: searchQuery },
@@ -21,33 +22,30 @@ const validRestaurants = computed(() => {
 })
 
 const focusRestaurant = (restaurant) => {
+  activeRestaurantId.value = restaurant.id
+
   if (restaurant.latitude && restaurant.longitude && mapRef.value?.map) {
     const mapInstance = mapRef.value.map
-
-    mapInstance.setZoom(12) 
-
-    setTimeout(() => {
-      mapInstance.panTo({
-        lat: Number(restaurant.latitude),
-        lng: Number(restaurant.longitude)
-      })
-      mapInstance.setZoom(16)
-    }, 400)
+    mapInstance.panTo({
+      lat: Number(restaurant.latitude),
+      lng: Number(restaurant.longitude)
+    })
+    mapInstance.setZoom(16)
   }
 }
 </script>
 
 <template>
   <div class="flex h-screen w-full overflow-hidden bg-gray-50 font-sans">
-    
+
     <div class="w-full md:w-1/3 bg-white shadow-xl z-10 flex flex-col border-r border-gray-200">
       <div class="p-6 border-b border-gray-100">
         <h1 class="text-3xl font-extrabold text-green-500 tracking-tight">Wong Nine</h1>
         <div class="mt-4">
           <UInput 
-            v-model="searchQuery"
-            icon="i-heroicons-magnifying-glass-20-solid"
-            size="lg"
+            v-model="searchQuery" 
+            icon="i-heroicons-magnifying-glass-20-solid" 
+            size="lg" 
             color="orange"
             placeholder="ค้นหาร้านอาหาร, หมวดหมู่, ทำเล..." 
           />
@@ -65,9 +63,9 @@ const focusRestaurant = (restaurant) => {
         </div>
 
         <UCard 
-          v-else
+          v-else 
           v-for="restaurant in restaurants" 
-          :key="restaurant.id"
+          :key="restaurant.id" 
           @click="focusRestaurant(restaurant)"
           class="cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all duration-200"
           :ui="{ body: { padding: 'p-4 sm:p-4' }, ring: 'ring-1 ring-gray-200' }"
@@ -91,9 +89,8 @@ const focusRestaurant = (restaurant) => {
     <div class="hidden md:block w-2/3 bg-slate-100 relative z-0">
       <ClientOnly>
         <GoogleMap
-<!-- dont forget to add google map api key -->
           ref="mapRef"
-          api-key="..." 
+          api-key="AIzaSyDOzYo8WoJLrQzbOFCQlgQ8lwjPrYpLx1Y" 
           style="width: 100%; height: 100%"
           :center="center"
           :zoom="zoom"
@@ -107,8 +104,22 @@ const focusRestaurant = (restaurant) => {
                 lng: Number(restaurant.longitude) 
               },
               title: restaurant.name
-            }" 
-          />
+            }"
+            @click="activeRestaurantId = restaurant.id"
+          >
+            <InfoWindow v-if="activeRestaurantId === restaurant.id">
+              <div class="text-gray-900 p-1 min-w-[150px]">
+                <h3 class="font-bold text-base mb-1">{{ restaurant.name }}</h3>
+                <UBadge color="orange" variant="subtle" size="sm">
+                  {{ restaurant.category }}
+                </UBadge>
+                <div class="flex items-center gap-1 mt-2">
+                  <UIcon name="i-heroicons-star-20-solid" class="text-yellow-500 w-4 h-4" />
+                  <span class="text-sm font-bold">{{ restaurant.rating || 'New' }}</span>
+                </div>
+              </div>
+            </InfoWindow>
+          </Marker>
         </GoogleMap>
         
         <template #fallback>
@@ -119,5 +130,4 @@ const focusRestaurant = (restaurant) => {
       </ClientOnly>
     </div>
 
-  </div>
-</template>
+  </div> </template>
