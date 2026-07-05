@@ -84,9 +84,78 @@ export class RestaurantsService {
     await this.restaurantRepository.update(id, { rating: newRating });
   }
 
+  // async findAll(
+  //   page: number = 1,
+  //   limit: number = 10,
+  //   search?: string,
+  //   category?: string,
+  //   minPrice?: number,
+  //   maxPrice?: number,
+  //   capacity?: number,
+  //   meal?: string,
+  //   isQuickMeal?: boolean,
+  // ) {
+  //   const skip = (page - 1) * limit;
+  //   const query = this.restaurantRepository.createQueryBuilder('restaurant');
+
+  //   if (search) {
+  //     query.andWhere(
+  //       '(LOWER(restaurant.name) LIKE LOWER(:search) OR LOWER(restaurant.category) LIKE LOWER(:search) OR LOWER(restaurant.address) LIKE LOWER(:search))',
+  //       { search: `%${search}%` },
+  //     );
+  //   }
+  //   if (category) {
+  //     query.andWhere('restaurant.category = :category', { category });
+  //   }
+  //   if (minPrice !== undefined) {
+  //     query.andWhere('restaurant.averagePrice >= :minPrice', { minPrice });
+  //   }
+  //   if (maxPrice !== undefined) {
+  //     query.andWhere('restaurant.averagePrice <= :maxPrice', { maxPrice });
+  //   }
+  //   if (capacity !== undefined) {
+  //     query.andWhere('restaurant.capacity >= :capacity', { capacity });
+  //   }
+
+  //   if (meal === 'breakfast') {
+  //     query.andWhere('restaurant.isBreakfast = :isTrue', { isTrue: true });
+  //   } else if (meal === 'lunch') {
+  //     query.andWhere('restaurant.isLunch = :isTrue', { isTrue: true });
+  //   } else if (meal === 'dinner') {
+  //     query.andWhere('restaurant.isDinner = :isTrue', { isTrue: true });
+  //   }
+
+  //   if (isQuickMeal !== undefined) {
+  //     query.andWhere('restaurant.isQuickMeal = :isQuickMeal', { isQuickMeal });
+  //   }
+
+  //   query.orderBy('restaurant.createdAt', 'DESC').skip(skip).take(limit);
+
+  //   const [data, total] = await query.getManyAndCount();
+  //   const totalPages = Math.ceil(total / limit);
+
+  //   let alertMessage: string | null = null;
+  //   if (capacity && capacity >= 10) {
+  //     alertMessage =
+  //       'เราคัดกรองเฉพาะร้านที่มีพื้นที่รองรับกลุ่ม 10 คนขึ้นไปมาให้คุณแล้ว';
+  //   }
+
+  //   return {
+  //     data: data,
+  //     meta: {
+  //       totalItems: total,
+  //       itemCount: data.length,
+  //       itemsPerPage: limit,
+  //       totalPages: totalPages,
+  //       currentPage: page,
+  //       alertMessage: alertMessage, // ส่งข้อความแนบไปให้หน้าบ้านโชว์ด้วย
+  //     },
+  //   };
+  // }
+
   async findAll(
-    page: number = 1,
-    limit: number = 10,
+    page: number,
+    limit: number,
     search?: string,
     category?: string,
     minPrice?: number,
@@ -95,61 +164,62 @@ export class RestaurantsService {
     meal?: string,
     isQuickMeal?: boolean,
   ) {
-    const skip = (page - 1) * limit;
-    const query = this.restaurantRepository.createQueryBuilder('restaurant');
-
+    const queryBuilder =
+      this.restaurantRepository.createQueryBuilder('restaurant');
     if (search) {
-      query.andWhere(
-        '(LOWER(restaurant.name) LIKE LOWER(:search) OR LOWER(restaurant.category) LIKE LOWER(:search) OR LOWER(restaurant.address) LIKE LOWER(:search))',
+      queryBuilder.andWhere(
+        '(restaurant.name ILIKE :search OR restaurant.address ILIKE :search)',
         { search: `%${search}%` },
       );
     }
+
     if (category) {
-      query.andWhere('restaurant.category = :category', { category });
-    }
-    if (minPrice !== undefined) {
-      query.andWhere('restaurant.averagePrice >= :minPrice', { minPrice });
-    }
-    if (maxPrice !== undefined) {
-      query.andWhere('restaurant.averagePrice <= :maxPrice', { maxPrice });
-    }
-    if (capacity !== undefined) {
-      query.andWhere('restaurant.capacity >= :capacity', { capacity });
+      queryBuilder.andWhere('restaurant.category = :category', { category });
     }
 
-    if (meal === 'breakfast') {
-      query.andWhere('restaurant.isBreakfast = :isTrue', { isTrue: true });
-    } else if (meal === 'lunch') {
-      query.andWhere('restaurant.isLunch = :isTrue', { isTrue: true });
-    } else if (meal === 'dinner') {
-      query.andWhere('restaurant.isDinner = :isTrue', { isTrue: true });
+    if (minPrice !== undefined) {
+      queryBuilder.andWhere('restaurant.averagePrice >= :minPrice', {
+        minPrice,
+      });
+    }
+
+    if (maxPrice !== undefined) {
+      queryBuilder.andWhere('restaurant.averagePrice <= :maxPrice', {
+        maxPrice,
+      });
+    }
+
+    if (capacity !== undefined) {
+      queryBuilder.andWhere('restaurant.capacity >= :capacity', { capacity });
+    }
+
+    if (meal) {
+      if (meal.toLowerCase() === 'breakfast') {
+        queryBuilder.andWhere('restaurant.isBreakfast = true');
+      } else if (meal.toLowerCase() === 'lunch') {
+        queryBuilder.andWhere('restaurant.isLunch = true');
+      } else if (meal.toLowerCase() === 'dinner') {
+        queryBuilder.andWhere('restaurant.isDinner = true');
+      }
     }
 
     if (isQuickMeal !== undefined) {
-      query.andWhere('restaurant.isQuickMeal = :isQuickMeal', { isQuickMeal });
+      queryBuilder.andWhere('restaurant.isQuickMeal = :isQuickMeal', {
+        isQuickMeal,
+      });
     }
 
-    query.orderBy('restaurant.createdAt', 'DESC').skip(skip).take(limit);
+    queryBuilder.orderBy('restaurant.createdAt', 'DESC');
+    queryBuilder.skip((page - 1) * limit).take(limit);
 
-    const [data, total] = await query.getManyAndCount();
-    const totalPages = Math.ceil(total / limit);
-
-    let alertMessage: string | null = null;
-    if (capacity && capacity >= 10) {
-      alertMessage =
-        'เราคัดกรองเฉพาะร้านที่มีพื้นที่รองรับกลุ่ม 10 คนขึ้นไปมาให้คุณแล้ว';
-    }
+    const [data, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: data,
-      meta: {
-        totalItems: total,
-        itemCount: data.length,
-        itemsPerPage: limit,
-        totalPages: totalPages,
-        currentPage: page,
-        alertMessage: alertMessage, // ส่งข้อความแนบไปให้หน้าบ้านโชว์ด้วย
-      },
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
