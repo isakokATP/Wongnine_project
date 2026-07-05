@@ -2,26 +2,100 @@
 import { ref, computed } from 'vue'
 import { GoogleMap, Marker, InfoWindow } from 'vue3-google-map'
 
+useHead({
+  link: [
+    {
+      rel: 'stylesheet',
+      href: 'https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap'
+    }
+  ]
+})
+
 const searchQuery = ref('')
+const filterCategory = ref('')
+const filterCapacity = ref('')
+const filterMeal = ref('')
+const filterQuickMeal = ref(false)
+
 const mapRef = ref(null)
 const zoom = ref(13)
 const center = ref({ lat: 13.778021, lng: 100.571930 })
 
 const activeRestaurantId = ref(null)
 
+const apiQuery = computed(() => {
+  const q = { page: 1, limit: 10 }
+  
+  if (searchQuery.value) q.search = searchQuery.value
+  if (filterCategory.value) q.category = filterCategory.value
+  if (filterCapacity.value) q.capacity = filterCapacity.value
+  if (filterMeal.value) q.meal = filterMeal.value
+  if (filterQuickMeal.value) q.isQuickMeal = 'true'
+
+  return q
+})
+
 const { data: response, pending, error } = await useFetch('http://localhost:3001/restaurants', {
-  query: { page: 1, limit: 10, search: searchQuery },
+  query: apiQuery,
   server: false,
-  watch: [searchQuery]
+  watch: [apiQuery]
 })
 
 const restaurants = computed(() => response.value?.data || [])
+const validRestaurants = computed(() => restaurants.value.filter(r => r.latitude && r.longitude))
 
-const validRestaurants = computed(() => {
-  return restaurants.value.filter(r => r.latitude && r.longitude)
+const activeRestaurant = computed(() =>
+  validRestaurants.value.find(r => r.id === activeRestaurantId.value) || null
+)
+
+const activeInfoPosition = computed(() => {
+  if (!activeRestaurant.value) return null
+  return {
+    lat: Number(activeRestaurant.value.latitude),
+    lng: Number(activeRestaurant.value.longitude)
+  }
 })
 
+const markerIcon = {
+  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+    <svg width="34" height="42" viewBox="0 0 34 42" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 0C7.6 0 0 7.6 0 17c0 12.8 17 25 17 25s17-12.2 17-25C34 7.6 26.4 0 17 0z" fill="#6E8F72"/>
+      <circle cx="17" cy="17" r="6.5" fill="#FFFFFF"/>
+    </svg>
+  `),
+  scaledSize: { width: 34, height: 42 },
+  anchor: { x: 17, y: 42 }
+}
+
+const activeMarkerIcon = {
+  url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+    <svg width="40" height="49" viewBox="0 0 34 42" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17 0C7.6 0 0 7.6 0 17c0 12.8 17 25 17 25s17-12.2 17-25C34 7.6 26.4 0 17 0z" fill="#E0A06E"/>
+      <circle cx="17" cy="17" r="6.5" fill="#FFFFFF"/>
+    </svg>
+  `),
+  scaledSize: { width: 40, height: 49 },
+  anchor: { x: 20, y: 49 }
+}
+
+const mapStyles = [
+  { elementType: 'geometry', stylers: [{ color: '#f7f8f5' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#9a9d92' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#e8e9e3' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#dde6dc' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#eef0ea' }] },
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] }
+]
+
 const focusRestaurant = (restaurant) => {
+  if (activeRestaurantId.value === restaurant.id) {
+    activeRestaurantId.value = null
+    return
+  }
+
   activeRestaurantId.value = restaurant.id
 
   if (restaurant.latitude && restaurant.longitude && mapRef.value?.map) {
@@ -33,101 +107,187 @@ const focusRestaurant = (restaurant) => {
     mapInstance.setZoom(16)
   }
 }
+
+const handleMapClick = () => {
+  activeRestaurantId.value = null
+}
 </script>
 
 <template>
-  <div class="flex h-screen w-full overflow-hidden bg-gray-50 font-sans">
+  <div class="flex h-screen w-full overflow-hidden bg-[#F7F8F5] font-['Prompt']">
 
-    <div class="w-full md:w-1/3 bg-white shadow-xl z-10 flex flex-col border-r border-gray-200">
-      <div class="p-6 border-b border-gray-100">
-        <h1 class="text-3xl font-extrabold text-green-500 tracking-tight">Wong Nine</h1>
-        <div class="mt-4">
-          <UInput 
-            v-model="searchQuery" 
-            icon="i-heroicons-magnifying-glass-20-solid" 
-            size="lg" 
-            color="orange"
-            placeholder="ค้นหาร้านอาหาร, หมวดหมู่, ทำเล..." 
+    <div class="w-full md:w-[380px] bg-white flex flex-col shadow-[1px_0_0_0_rgba(0,0,0,0.04)]">
+      <div class="px-7 pt-8 pb-6 border-b border-[#EEEFEA]">
+        <h1 class="text-2xl font-semibold text-[#31352D] tracking-tight">Wong Nine</h1>
+        <p class="text-sm text-[#9a9d92] mt-1 font-light">ค้นหาร้านอาหารที่ใช่ ใกล้คุณ</p>
+
+        <div class="mt-5 relative">
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9a9d92]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="ค้นหาร้านอาหาร, หมวดหมู่, ทำเล..."
+            class="w-full h-11 pl-11 pr-4 rounded-full bg-[#F7F8F5] text-sm text-[#31352D] placeholder:text-[#a3a79a]
+                   border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none
+                   focus:ring-4 focus:ring-[#6E8F72]/10 transition-all duration-200"
           />
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-2.5">
+          <select 
+            v-model="filterCategory" 
+            class="h-9 px-3 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all cursor-pointer"
+          >
+            <option value="">ทุกประเภท</option>
+            <option value="คาเฟ่">คาเฟ่</option>
+            <option value="อาหารจานเดียว">อาหารจานเดียว</option>
+            <option value="อาหารตามสั่ง">อาหารตามสั่ง</option>
+            <option value="ชาบู/บุฟเฟต์">ชาบู/บุฟเฟต์</option>
+            <option value="อาหารอีสาน">อาหารอีสาน</option>
+          </select>
+
+          <select 
+            v-model="filterMeal" 
+            class="h-9 px-3 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all cursor-pointer"
+          >
+            <option value="">ทุกมื้อ</option>
+            <option value="breakfast">มื้อเช้า</option>
+            <option value="lunch">มื้อเที่ยง</option>
+            <option value="dinner">มื้อเย็น</option>
+          </select>
+
+          <div class="relative">
+            <input
+              v-model="filterCapacity"
+              type="number"
+              min="1"
+              placeholder="จำนวนคน..."
+              class="w-full h-9 pl-3 pr-2 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] placeholder:text-[#a3a79a] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all"
+            />
+          </div>
+
+          <label class="flex items-center justify-center gap-2 cursor-pointer h-9 px-3 rounded-lg bg-[#F7F8F5] border border-transparent hover:bg-[#e8e9e3]/60 transition-all select-none">
+            <input
+              v-model="filterQuickMeal"
+              type="checkbox"
+              class="w-3.5 h-3.5 rounded border-gray-300 text-[#6E8F72] focus:ring-[#6E8F72] focus:ring-offset-0 accent-[#6E8F72]"
+            />
+            <span class="text-[13px] text-[#31352D]">จานด่วน</span>
+          </label>
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
-        <div v-if="pending" class="text-center text-gray-400 py-10">
-          <UIcon name="i-heroicons-arrow-path-20-solid" class="animate-spin w-8 h-8 mx-auto" />
-          <p class="mt-2 text-sm">กำลังโหลดข้อมูล...</p>
+      <div class="flex-1 overflow-y-auto px-5 pt-4 pb-6 space-y-3 nice-scroll">
+        <div v-if="pending" class="flex flex-col items-center justify-center text-[#a3a79a] py-16 gap-3">
+          <div class="w-6 h-6 border-2 border-[#e8e9e3] border-t-[#6E8F72] rounded-full animate-spin" />
+          <p class="text-sm font-light">กำลังโหลดข้อมูล...</p>
         </div>
 
-        <div v-else-if="error" class="text-center text-red-500 py-10 bg-red-50 rounded-lg border border-red-200">
-          <p class="font-bold">เชื่อมต่อ API ไม่ได้</p>
+        <div v-else-if="error" class="text-center py-10 px-5 bg-[#FBF1EC] rounded-2xl">
+          <p class="text-sm font-medium text-[#c17a4f]">เชื่อมต่อ API ไม่ได้</p>
         </div>
 
-        <UCard 
-          v-else 
-          v-for="restaurant in restaurants" 
-          :key="restaurant.id" 
+        <div v-else-if="restaurants.length === 0" class="text-center py-12">
+          <p class="text-sm text-[#a3a79a] font-light">ไม่พบร้านอาหารที่ตรงกับเงื่อนไข</p>
+        </div>
+
+        <button
+          v-else
+          v-for="restaurant in restaurants"
+          :key="restaurant.id"
+          type="button"
           @click="focusRestaurant(restaurant)"
-          class="cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all duration-200"
-          :ui="{ body: { padding: 'p-4 sm:p-4' }, ring: 'ring-1 ring-gray-200' }"
+          class="w-full text-left p-5 rounded-2xl bg-white transition-all duration-200 group"
+          :class="activeRestaurantId === restaurant.id
+            ? 'ring-1 ring-[#6E8F72]/40 shadow-[0_2px_12px_rgba(110,143,114,0.12)]'
+            : 'ring-1 ring-[#EEEFEA] hover:ring-[#d9dcd2] hover:shadow-[0_2px_10px_rgba(0,0,0,0.04)]'"
         >
-          <div class="flex justify-between items-start">
-            <h2 class="text-lg font-bold text-gray-900">{{ restaurant.name }}</h2>
-            <UBadge color="yellow" variant="subtle" size="md">
-              <UIcon name="i-heroicons-star-20-solid" class="mr-1 text-yellow-500" />
-              <span class="font-bold text-yellow-700">{{ restaurant.rating || 'New' }}</span>
-            </UBadge>
+          <div class="flex justify-between items-start gap-3">
+            <h2 class="text-[15px] font-medium text-[#31352D] leading-snug">{{ restaurant.name }}</h2>
+            <div class="flex items-center gap-1 shrink-0 pt-0.5">
+              <svg class="w-3.5 h-3.5 text-[#E0A06E]" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.063 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.285-3.958z"/>
+              </svg>
+              <span class="text-xs font-medium text-[#8B9184]">{{ restaurant.rating || 'New' }}</span>
+            </div>
           </div>
-          <p class="text-orange-500 text-sm font-semibold mt-1">{{ restaurant.category }}</p>
-          <p class="text-gray-500 text-sm mt-3 flex items-start gap-1">
-            <UIcon name="i-heroicons-map-pin-20-solid" class="mt-0.5 flex-shrink-0 text-gray-400" />
-            <span class="line-clamp-2">{{ restaurant.address || 'ไม่มีข้อมูลที่อยู่' }}</span>
+
+          <p class="text-xs font-medium text-[#6E8F72] mt-1.5">{{ restaurant.category }}</p>
+
+          <p class="text-xs text-[#a3a79a] mt-3 leading-relaxed line-clamp-2 font-light">
+            {{ restaurant.address || 'ไม่มีข้อมูลที่อยู่' }}
           </p>
-        </UCard>
+        </button>
       </div>
     </div>
 
-    <div class="hidden md:block w-2/3 bg-slate-100 relative z-0">
+    <div class="hidden md:block flex-1 relative">
       <ClientOnly>
         <GoogleMap
           ref="mapRef"
-          api-key="" 
+          api-key="AIzaSyDOzYo8WoJLrQzbOFCQlgQ8lwjPrYpLx1Y"
           style="width: 100%; height: 100%"
           :center="center"
           :zoom="zoom"
+          :styles="mapStyles"
+          :disable-default-ui="true"
+          :zoom-control="true"
+          @click="handleMapClick"
         >
-          <Marker 
-            v-for="restaurant in validRestaurants" 
+          <Marker
+            v-for="restaurant in validRestaurants"
             :key="`marker-${restaurant.id}`"
-            :options="{ 
-              position: { 
-                lat: Number(restaurant.latitude), 
-                lng: Number(restaurant.longitude) 
-              },
-              title: restaurant.name
+            :options="{
+              position: { lat: Number(restaurant.latitude), lng: Number(restaurant.longitude) },
+              title: restaurant.name,
+              icon: activeRestaurantId === restaurant.id ? activeMarkerIcon : markerIcon
             }"
-            @click="activeRestaurantId = restaurant.id"
+            @click="focusRestaurant(restaurant)"
+          />
+
+          <InfoWindow
+            v-if="activeRestaurant"
+            :options="{ position: activeInfoPosition, pixelOffset: { width: 0, height: -46 } }"
+            @closeclick="activeRestaurantId = null"
           >
-            <InfoWindow v-if="activeRestaurantId === restaurant.id">
-              <div class="text-gray-900 p-1 min-w-[150px]">
-                <h3 class="font-bold text-base mb-1">{{ restaurant.name }}</h3>
-                <UBadge color="orange" variant="subtle" size="sm">
-                  {{ restaurant.category }}
-                </UBadge>
-                <div class="flex items-center gap-1 mt-2">
-                  <UIcon name="i-heroicons-star-20-solid" class="text-yellow-500 w-4 h-4" />
-                  <span class="text-sm font-bold">{{ restaurant.rating || 'New' }}</span>
-                </div>
+            <div class="font-['Prompt'] px-1 py-1 min-w-[170px]">
+              <h3 class="text-sm font-medium text-[#31352D] mb-1.5">{{ activeRestaurant.name }}</h3>
+              <p class="text-xs font-medium text-[#6E8F72] mb-2">{{ activeRestaurant.category }}</p>
+              <div class="flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-[#E0A06E]" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.063 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.285-3.958z"/>
+                </svg>
+                <span class="text-xs font-medium text-[#8B9184]">{{ activeRestaurant.rating || 'New' }}</span>
               </div>
-            </InfoWindow>
-          </Marker>
+            </div>
+          </InfoWindow>
         </GoogleMap>
-        
+
         <template #fallback>
-          <div class="flex items-center justify-center h-full w-full bg-slate-100">
-            <UIcon name="i-heroicons-arrow-path-20-solid" class="animate-spin w-10 h-10 text-gray-400" />
+          <div class="flex items-center justify-center h-full w-full bg-[#F7F8F5]">
+            <div class="w-8 h-8 border-2 border-[#e8e9e3] border-t-[#6E8F72] rounded-full animate-spin" />
           </div>
         </template>
       </ClientOnly>
     </div>
 
-  </div> </template>
+  </div>
+</template>
+
+<style scoped>
+.nice-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.nice-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nice-scroll::-webkit-scrollbar-thumb {
+  background: #e8e9e3;
+  border-radius: 999px;
+}
+.nice-scroll::-webkit-scrollbar-thumb:hover {
+  background: #d9dcd2;
+}
+</style>
