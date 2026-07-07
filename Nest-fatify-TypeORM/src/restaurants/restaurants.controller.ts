@@ -10,12 +10,17 @@ import {
   Inject,
   forwardRef,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { CreateReviewDto } from '../reviews/dto/create-review.dto';
 import { ReviewsService } from '../reviews/reviews.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('restaurants') // http://localhost:3000/restaurants
 export class RestaurantsController {
@@ -69,7 +74,7 @@ export class RestaurantsController {
   //   return await this.reviewsService.findByRestaurant(id);
   // }
 
-@Get()
+  @Get()
   findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -94,7 +99,7 @@ export class RestaurantsController {
       maxPrice ? +maxPrice : undefined,
       capacity ? +capacity : undefined,
       meal,
-      isQuickMealBool
+      isQuickMealBool,
     );
   }
 
@@ -102,8 +107,28 @@ export class RestaurantsController {
   async getReviews(
     @Param('id', ParseIntPipe) id: number,
     @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10'
+    @Query('limit') limit: string = '10',
   ) {
     return await this.reviewsService.findByRestaurant(id, +page, +limit);
+  }
+
+  @Post('upload-image')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    return {
+      imageUrl: `/uploads/${file.filename}`,
+    };
   }
 }

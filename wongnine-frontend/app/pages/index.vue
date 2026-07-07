@@ -323,7 +323,7 @@ watch(isAddMode, (newVal) => {
 
     <div class="hidden md:block flex-1 relative z-0">
       <ClientOnly>
-        <GoogleMap ref="mapRef" api-key="..." style="width: 100%; height: 100%"
+        <GoogleMap ref="mapRef" api-key="AIzaSyDOzYo8WoJLrQzbOFCQlgQ8lwjPrYpLx1Y" style="width: 100%; height: 100%"
           :center="center" :zoom="zoom" :styles="mapStyles" :disable-default-ui="true" :zoom-control="true"
           @click="handleMapClick">
           
