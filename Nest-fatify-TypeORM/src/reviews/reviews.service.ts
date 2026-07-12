@@ -12,7 +12,7 @@ import { Review } from './entities/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { RestaurantsService } from '../restaurants/restaurants.service';
 import { User } from '../users/entities/user.entity';
-import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
+import { Restaurant } from '../restaurants/entities/restaurant.entity';
 import { UpdateReviewDto } from './dto/update-review.dto';
 
 @Injectable()

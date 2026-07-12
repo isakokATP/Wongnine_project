@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { Restaurant } from './entities/restaurant.entity';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
-import { ReviewsService } from 'src/reviews/reviews.service';
+import { ReviewsService } from '../reviews/reviews.service';
 import { Review } from '../reviews/entities/review.entity';
 
 @Injectable()
@@ -26,37 +26,42 @@ export class RestaurantsService {
     private readonly reviewRepository: Repository<Review>,
   ) {}
 
-  async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
-    const { reviewUserId, reviewRating, reviewComment, ...restaurantData } =
-      createRestaurantDto;
+async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
+  const { reviewUserId, reviewRating, reviewComment, ...restaurantData } =
+    createRestaurantDto;
 
-    const existingRestaurant = await this.restaurantRepository.findOneBy({
-      name: restaurantData.name,
-    });
-    if (existingRestaurant) {
-      throw new ConflictException('Restaurant name already exists');
-    }
-
-    if (reviewRating !== undefined) {
-      (restaurantData as Partial<Restaurant>).rating = reviewRating;
-    }
-
-    const newRestaurant = this.restaurantRepository.create(
-      restaurantData as Partial<Restaurant>,
+  // เช็คซ้ำจากชื่อ + พิกัด อนุญาตให้ชื่อซ้ำได้หากเป็นคนละสาขา (คนละพิกัด)
+  const existingRestaurant = await this.restaurantRepository.findOneBy({
+    name: restaurantData.name,
+    latitude: restaurantData.latitude,
+    longitude: restaurantData.longitude,
+  });
+  if (existingRestaurant) {
+    throw new ConflictException(
+      'Restaurant with this name already exists at this location',
     );
-    const savedRestaurant = await this.restaurantRepository.save(newRestaurant);
-
-    if (reviewUserId && reviewRating !== undefined && reviewComment) {
-      await this.reviewsService.create({
-        userId: reviewUserId,
-        restaurantId: savedRestaurant.id,
-        rating: reviewRating,
-        comment: reviewComment,
-      });
-    }
-
-    return savedRestaurant;
   }
+
+  if (reviewRating !== undefined) {
+    (restaurantData as Partial<Restaurant>).rating = reviewRating;
+  }
+
+  const newRestaurant = this.restaurantRepository.create(
+    restaurantData as Partial<Restaurant>,
+  );
+  const savedRestaurant = await this.restaurantRepository.save(newRestaurant);
+
+  if (reviewUserId && reviewRating !== undefined && reviewComment) {
+    await this.reviewsService.create({
+      userId: reviewUserId,
+      restaurantId: savedRestaurant.id,
+      rating: reviewRating,
+      comment: reviewComment,
+    });
+  }
+
+  return savedRestaurant;
+}
 
   async findOne(id: number): Promise<Restaurant> {
     const restaurant = await this.restaurantRepository.findOne({

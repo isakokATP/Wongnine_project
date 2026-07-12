@@ -1,4 +1,12 @@
-import { IsString, IsEmail, IsNotEmpty, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  MinLength,
+} from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class CreateUserDto {
@@ -10,8 +18,14 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'กรุณากรอก Email' })
   email: string;
 
+  @IsString()
+  @MinLength(8, { message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' })
+  password: string;
+
   @IsOptional()
-  @IsEnum(UserRole, { message: 'สิทธิ์ผู้ใช้งานต้องเป็น user, admin หรือ owner เท่านั้น' })
+  @IsEnum(UserRole, {
+    message: 'สิทธิ์ผู้ใช้งานต้องเป็น user, admin หรือ owner เท่านั้น',
+  })
   role?: UserRole;
 
   @IsBoolean()

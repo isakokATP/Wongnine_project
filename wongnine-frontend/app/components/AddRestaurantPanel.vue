@@ -1,5 +1,7 @@
 <script setup>
-import { reactive, watch } from 'vue'
+import { ref, reactive, watch } from 'vue'
+
+const config = useRuntimeConfig()
 
 const props = defineProps({
   isOpen: Boolean,
@@ -31,6 +33,7 @@ const form = reactive({
 
 const selectedFile = ref(null)
 const imagePreview = ref(null)
+const isSubmitting = ref(false) // ป้องกันกดปุ่มซ้ำระหว่างรอ API
 
 watch(() => props.clickedLat, (newVal) => { form.latitude = newVal })
 watch(() => props.clickedLng, (newVal) => { form.longitude = newVal })
@@ -38,12 +41,19 @@ watch(() => props.clickedLng, (newVal) => { form.longitude = newVal })
 const handleFileChange = (event) => {
   const file = event.target.files[0]
   if (file) {
+    // เคลียร์ URL เก่าก่อนเสมอ ป้องกัน memory leak หากเลือกไฟล์ใหม่ทับของเดิม
+    if (imagePreview.value) {
+      URL.revokeObjectURL(imagePreview.value)
+    }
     selectedFile.value = file
-    imagePreview.value = URL.createObjectURL(file) // สร้าง URL จำลองเพื่อโชว์พรีวิว
+    imagePreview.value = URL.createObjectURL(file)
   }
 }
 
 const removeImage = () => {
+  if (imagePreview.value) {
+    URL.revokeObjectURL(imagePreview.value)
+  }
   selectedFile.value = null
   imagePreview.value = null
 }
@@ -73,10 +83,17 @@ const closePanel = () => {
 }
 
 const handleSubmit = async () => {
+  if (isSubmitting.value) return // กันกดซ้ำ
+
   if (!props.currentUser) return alert('กรุณาล็อกอินก่อนเพิ่มร้านอาหาร')
   if (!form.name || !form.category) return alert('กรุณากรอกชื่อร้านและหมวดหมู่ให้ครบถ้วน')
   if (!form.latitude || !form.longitude) return alert('กรุณาจิ้มเลือกพิกัดร้านบนแผนที่')
+  if (!form.reviewComment.trim()) return alert('กรุณากรอกข้อความรีวิว')
+  if (!form.reviewRating || form.reviewRating < 1 || form.reviewRating > 5) {
+    return alert('กรุณาให้คะแนนระหว่าง 1-5')
+  }
 
+  isSubmitting.value = true
   let finalImageUrl = null
 
   if (selectedFile.value) {
@@ -84,7 +101,7 @@ const handleSubmit = async () => {
       const formData = new FormData()
       formData.append('file', selectedFile.value)
 
-      const uploadRes = await $fetch('http://localhost:3001/restaurants/upload-image', {
+      const uploadRes = await $fetch(`${config.public.apiBase}/restaurants/upload-image`, {
         method: 'POST',
         body: formData
       })
@@ -92,6 +109,7 @@ const handleSubmit = async () => {
     } catch (err) {
       console.error('Upload Error:', err)
       alert('อัปโหลดรูปภาพไม่สำเร็จ กรุณาลองใหม่')
+      isSubmitting.value = false
       return
     }
   }
@@ -117,8 +135,17 @@ const handleSubmit = async () => {
     reviewComment: form.reviewComment
   }
 
-  emit('submit', payload)
-  resetForm()
+  // ส่ง payload พร้อม callback ให้ parent เป็นคนตัดสินว่าสำเร็จหรือไม่
+  // resetForm() จะถูกเรียกเฉพาะตอนสำเร็จเท่านั้น ไม่ล้างข้อมูลทิ้งถ้า API พัง
+  emit('submit', payload, {
+    onSuccess: () => {
+      isSubmitting.value = false
+      resetForm()
+    },
+    onError: () => {
+      isSubmitting.value = false
+    }
+  })
 }
 </script>
 
@@ -246,8 +273,12 @@ const handleSubmit = async () => {
     </div>
 
     <div class="p-5 border-t border-[#EEEFEA] bg-white">
-      <button @click="handleSubmit" class="w-full py-3 rounded-xl bg-[#6E8F72] hover:bg-[#5a765e] text-white font-medium text-sm transition-all shadow-md">
-        บันทึกข้อมูลร้าน & รีวิว
+      <button 
+        @click="handleSubmit" 
+        :disabled="isSubmitting"
+        class="w-full py-3 rounded-xl bg-[#6E8F72] hover:bg-[#5a765e] text-white font-medium text-sm transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูลร้าน & รีวิว' }}
       </button>
     </div>
   </div>
