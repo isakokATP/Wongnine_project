@@ -2,6 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { GoogleMap, Marker, InfoWindow } from 'vue3-google-map'
 
+const config = useRuntimeConfig()
+
 useHead({
   link: [
     {
@@ -23,8 +25,8 @@ const totalPages = ref(1)
 const restaurantsList = ref([]) //เปลี่ยนมาเก็บรายการร้านแบบสะสม
 
 const currentUser = ref({
-  id: 1,
-  username: 'foodie_exploer',
+  id: 3,
+  username: 'reze isakok',
   role: 'user'
 })
 
@@ -38,7 +40,7 @@ watch(searchQuery, (newVal) => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
     debouncedSearchQuery.value = newVal
-  }, 400) // หน่วงเวลา 400ms ก่อนยิง API
+  }, 400)
 })
 
 const mapRef = ref(null)
@@ -58,7 +60,7 @@ const apiQuery = computed(() => {
   return q
 })
 
-const { data: response, pending, error, refresh } = await useFetch('http://localhost:3001/restaurants', {
+const { data: response, pending, error, refresh } = await useFetch(`${config.public.apiBase}/restaurants`, {
   query: apiQuery,
   server: false,
   watch: [apiQuery]
@@ -168,9 +170,9 @@ const handleMapClick = (event) => {
   }
 }
 
-const submitNewRestaurantToApi = async (payload) => {
+const submitNewRestaurantToApi = async (payload, callbacks) => {
   try {
-    const response = await $fetch('http://localhost:3001/restaurants', {
+    const response = await $fetch(`${config.public.apiBase}/restaurants`, {
       method: 'POST',
       body: payload
     })
@@ -181,9 +183,13 @@ const submitNewRestaurantToApi = async (payload) => {
     page.value = 1
 
     await refresh()
+
+    callbacks?.onSuccess?.()
   } catch (error) {
     console.error('Error adding restaurant:', error)
     alert('เกิดข้อผิดพลาดในการเพิ่มร้านอาหาร')
+
+    callbacks?.onError?.()
   }
 }
 
@@ -323,7 +329,7 @@ watch(isAddMode, (newVal) => {
 
     <div class="hidden md:block flex-1 relative z-0">
       <ClientOnly>
-        <GoogleMap ref="mapRef" api-key="AIzaSyDOzYo8WoJLrQzbOFCQlgQ8lwjPrYpLx1Y" style="width: 100%; height: 100%"
+        <GoogleMap ref="mapRef" :api-key="config.public.googleMapsApiKey" style="width: 100%; height: 100%"
           :center="center" :zoom="zoom" :styles="mapStyles" :disable-default-ui="true" :zoom-control="true"
           @click="handleMapClick">
           
