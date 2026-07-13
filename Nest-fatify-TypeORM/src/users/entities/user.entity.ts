@@ -20,8 +20,8 @@ export class User {
 
     // select: false = query ปกติ (find, findOne) จะไม่ดึง password ออกมาด้วย
     // ต้องระบุ .addSelect('user.password') ตอน query ตอน login เท่านั้นถึงจะเห็นค่านี้
-    @Column({ type: 'varchar', select: false })
-    password: string;
+    @Column({ type: 'varchar', select: false, nullable: true })
+    password: string | null;
 
     @Column({ type: 'varchar', default: UserRole.USER })
     role: UserRole;

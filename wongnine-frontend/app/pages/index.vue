@@ -2,7 +2,11 @@
 import { ref, computed, watch } from 'vue'
 import { GoogleMap, Marker, InfoWindow } from 'vue3-google-map'
 
+definePageMeta({ middleware: 'auth', ssr: false })
+
 const config = useRuntimeConfig()
+
+const { currentUser, logout, apiFetch } = useAuth()
 
 useHead({
   link: [
@@ -22,13 +26,7 @@ const filterQuickMeal = ref(false)
 
 const page = ref(1)
 const totalPages = ref(1)
-const restaurantsList = ref([]) //เปลี่ยนมาเก็บรายการร้านแบบสะสม
-
-const currentUser = ref({
-  id: 3,
-  username: 'reze isakok',
-  role: 'user'
-})
+const restaurantsList = ref([]) // เปลี่ยนมาเก็บรายการร้านแบบสะสม
 
 const isAddMode = ref(false)
 const clickedLat = ref(null)
@@ -63,6 +61,7 @@ const apiQuery = computed(() => {
 const { data: response, pending, error, refresh } = await useFetch(`${config.public.apiBase}/restaurants`, {
   query: apiQuery,
   server: false,
+  credentials: 'include',
   watch: [apiQuery]
 })
 
@@ -172,7 +171,7 @@ const handleMapClick = (event) => {
 
 const submitNewRestaurantToApi = async (payload, callbacks) => {
   try {
-    const response = await $fetch(`${config.public.apiBase}/restaurants`, {
+    await apiFetch('/restaurants', {
       method: 'POST',
       body: payload
     })
@@ -213,151 +212,278 @@ watch(isAddMode, (newVal) => {
 </script>
 
 <template>
-  <div class="flex h-screen w-full overflow-hidden bg-[#F7F8F5] font-['Prompt']">
-
-    <div class="w-full md:w-[380px] bg-white flex flex-col shadow-[1px_0_0_0_rgba(0,0,0,0.04)] z-10 relative">
+  <div class="flex flex-col md:flex-row h-screen w-full overflow-hidden bg-[#F7F8F5] font-['Prompt']">
+    <div class="w-full md:w-[380px] h-1/2 md:h-full bg-white flex flex-col shadow-[1px_0_0_0_rgba(0,0,0,0.04)] z-10 relative">
       <div class="px-7 pt-8 pb-6 border-b border-[#EEEFEA]">
-        <h1 class="text-2xl font-semibold text-[#31352D] tracking-tight">Wong Nine</h1>
-        <p class="text-sm text-[#9a9d92] mt-1 font-light">ค้นหาร้านอาหารที่ใช่ ใกล้คุณ</p>
+        <h1 class="text-2xl font-semibold text-[#31352D] tracking-tight">
+          Wong Nine
+        </h1>
+        <button
+          v-if="currentUser"
+          class="text-xs font-medium text-[#8B9184] hover:text-[#c17a4f] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F7F8F5] hover:bg-[#e8e9e3] transition-colors"
+          @click="logout"
+        >
+          {{ currentUser.name }} · ออกจากระบบ
+        </button>
+        <p class="text-sm text-[#9a9d92] mt-1 font-light">
+          ค้นหาร้านอาหารที่ใช่ ใกล้คุณ
+        </p>
 
         <div class="mt-5 relative">
-          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9a9d92]" fill="none" viewBox="0 0 24 24"
-            stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9a9d92]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
-          <input v-model="searchQuery" type="text" placeholder="ค้นหาร้านอาหาร, หมวดหมู่, ทำเล..." class="w-full h-11 pl-11 pr-4 rounded-full bg-[#F7F8F5] text-sm text-[#31352D] placeholder:text-[#a3a79a]
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="ค้นหาร้านอาหาร, หมวดหมู่, ทำเล..."
+            class="w-full h-11 pl-11 pr-4 rounded-full bg-[#F7F8F5] text-sm text-[#31352D] placeholder:text-[#a3a79a]
                    border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none
-                   focus:ring-4 focus:ring-[#6E8F72]/10 transition-all duration-200" />
+                   focus:ring-4 focus:ring-[#6E8F72]/10 transition-all duration-200"
+          >
         </div>
 
         <div class="flex justify-between items-end mt-5 mb-2">
           <span class="text-xs font-semibold text-[#8B9184] uppercase tracking-wider">ตัวกรอง</span>
           <div class="flex gap-3">
-            <button @click="clearFilters"
-              class="text-xs font-medium text-[#c17a4f] hover:text-[#a0623d] transition-colors">ล้างค่า</button>
-            <button @click="isAddMode = true"
-              class="text-xs font-semibold text-white bg-[#6E8F72] hover:bg-[#5a765e] px-3 py-1 rounded-md transition-colors shadow-sm">+
-              เพิ่มร้าน</button>
+            <button
+              class="text-xs font-medium text-[#c17a4f] hover:text-[#a0623d] transition-colors"
+              @click="clearFilters"
+            >
+              ล้างค่า
+            </button>
+            <button
+              class="text-xs font-semibold text-white bg-[#6E8F72] hover:bg-[#5a765e] px-3 py-1 rounded-md transition-colors shadow-sm"
+              @click="isAddMode = true"
+            >
+              +
+              เพิ่มร้าน
+            </button>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2.5">
-          <select v-model="filterCategory"
-            class="h-9 px-3 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all cursor-pointer">
-            <option value="">ทุกประเภท</option>
-            <option value="คาเฟ่">คาเฟ่</option>
-            <option value="อาหารจานเดียว">อาหารจานเดียว</option>
-            <option value="อาหารตามสั่ง">อาหารตามสั่ง</option>
-            <option value="ชาบู/บุฟเฟต์">ชาบู/บุฟเฟต์</option>
-            <option value="อาหารอีสาน">อาหารอีสาน</option>
+          <select
+            v-model="filterCategory"
+            class="h-9 px-3 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all cursor-pointer"
+          >
+            <option value="">
+              ทุกประเภท
+            </option>
+            <option value="คาเฟ่">
+              คาเฟ่
+            </option>
+            <option value="อาหารจานเดียว">
+              อาหารจานเดียว
+            </option>
+            <option value="อาหารตามสั่ง">
+              อาหารตามสั่ง
+            </option>
+            <option value="ชาบู/บุฟเฟต์">
+              ชาบู/บุฟเฟต์
+            </option>
+            <option value="อาหารอีสาน">
+              อาหารอีสาน
+            </option>
           </select>
 
-          <select v-model="filterMeal"
-            class="h-9 px-3 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all cursor-pointer">
-            <option value="">ทุกมื้อ</option>
-            <option value="breakfast">มื้อเช้า</option>
-            <option value="lunch">มื้อเที่ยง</option>
-            <option value="dinner">มื้อเย็น</option>
+          <select
+            v-model="filterMeal"
+            class="h-9 px-3 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all cursor-pointer"
+          >
+            <option value="">
+              ทุกมื้อ
+            </option>
+            <option value="breakfast">
+              มื้อเช้า
+            </option>
+            <option value="lunch">
+              มื้อเที่ยง
+            </option>
+            <option value="dinner">
+              มื้อเย็น
+            </option>
           </select>
 
           <div class="relative">
-            <input v-model="filterCapacity" type="number" min="1" placeholder="จำนวนคน..."
-              class="w-full h-9 pl-3 pr-2 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] placeholder:text-[#a3a79a] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all" />
+            <input
+              v-model="filterCapacity"
+              type="number"
+              min="1"
+              placeholder="จำนวนคน..."
+              class="w-full h-9 pl-3 pr-2 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] placeholder:text-[#a3a79a] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all"
+            >
           </div>
 
           <label
-            class="flex items-center justify-center gap-2 cursor-pointer h-9 px-3 rounded-lg bg-[#F7F8F5] border border-transparent hover:bg-[#e8e9e3]/60 transition-all select-none">
-            <input v-model="filterQuickMeal" type="checkbox"
-              class="w-3.5 h-3.5 rounded border-gray-300 text-[#6E8F72] focus:ring-[#6E8F72] focus:ring-offset-0 accent-[#6E8F72]" />
+            class="flex items-center justify-center gap-2 cursor-pointer h-9 px-3 rounded-lg bg-[#F7F8F5] border border-transparent hover:bg-[#e8e9e3]/60 transition-all select-none"
+          >
+            <input
+              v-model="filterQuickMeal"
+              type="checkbox"
+              class="w-3.5 h-3.5 rounded border-gray-300 text-[#6E8F72] focus:ring-[#6E8F72] focus:ring-offset-0 accent-[#6E8F72]"
+            >
             <span class="text-[13px] text-[#31352D]">จานด่วน</span>
           </label>
         </div>
       </div>
 
       <div class="flex-1 overflow-y-auto px-5 pt-4 pb-6 space-y-3 nice-scroll">
-        <div v-if="pending && page === 1" class="flex flex-col items-center justify-center text-[#a3a79a] py-16 gap-3">
+        <div
+          v-if="pending && page === 1"
+          class="flex flex-col items-center justify-center text-[#a3a79a] py-16 gap-3"
+        >
           <div class="w-6 h-6 border-2 border-[#e8e9e3] border-t-[#6E8F72] rounded-full animate-spin" />
-          <p class="text-sm font-light">กำลังค้นหา...</p>
+          <p class="text-sm font-light">
+            กำลังค้นหา...
+          </p>
         </div>
 
-        <div v-else-if="error" class="text-center py-10 px-5 bg-[#FBF1EC] rounded-2xl">
-          <p class="text-sm font-medium text-[#c17a4f]">เชื่อมต่อ API ไม่ได้</p>
+        <div
+          v-else-if="error"
+          class="text-center py-10 px-5 bg-[#FBF1EC] rounded-2xl"
+        >
+          <p class="text-sm font-medium text-[#c17a4f]">
+            เชื่อมต่อ API ไม่ได้
+          </p>
         </div>
 
-        <div v-else-if="restaurantsList.length === 0" class="text-center py-12">
-          <p class="text-sm text-[#a3a79a] font-light">ไม่พบร้านอาหารที่ตรงกับเงื่อนไข</p>
+        <div
+          v-else-if="restaurantsList.length === 0"
+          class="text-center py-12"
+        >
+          <p class="text-sm text-[#a3a79a] font-light">
+            ไม่พบร้านอาหารที่ตรงกับเงื่อนไข
+          </p>
         </div>
 
         <template v-else>
-          <button v-for="restaurant in restaurantsList" :key="restaurant.id" type="button"
-            @click="focusRestaurant(restaurant)"
-            class="w-full text-left p-5 rounded-2xl bg-white transition-all duration-200 group" :class="activeRestaurantId === restaurant.id
+          <button
+            v-for="restaurant in restaurantsList"
+            :key="restaurant.id"
+            type="button"
+            class="w-full text-left p-5 rounded-2xl bg-white transition-all duration-200 group"
+            :class="activeRestaurantId === restaurant.id
               ? 'ring-1 ring-[#6E8F72]/40 shadow-[0_2px_12px_rgba(110,143,114,0.12)]'
-              : 'ring-1 ring-[#EEEFEA] hover:ring-[#d9dcd2] hover:shadow-[0_2px_10px_rgba(0,0,0,0.04)]'">
+              : 'ring-1 ring-[#EEEFEA] hover:ring-[#d9dcd2] hover:shadow-[0_2px_10px_rgba(0,0,0,0.04)]'"
+            @click="focusRestaurant(restaurant)"
+          >
             <div class="flex justify-between items-start gap-3">
-              <h2 class="text-[15px] font-medium text-[#31352D] leading-snug">{{ restaurant.name }}</h2>
+              <h2 class="text-[15px] font-medium text-[#31352D] leading-snug">
+                {{ restaurant.name }}
+              </h2>
               <div class="flex items-center gap-1 shrink-0 pt-0.5">
-                <svg class="w-3.5 h-3.5 text-[#E0A06E]" fill="currentColor" viewBox="0 0 20 20">
+                <svg
+                  class="w-3.5 h-3.5 text-[#E0A06E]"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
                   <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.063 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.285-3.958z" />
+                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.063 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.285-3.958z"
+                  />
                 </svg>
                 <span class="text-xs font-medium text-[#8B9184]">{{ restaurant.rating || 'New' }}</span>
               </div>
             </div>
 
-            <p class="text-xs font-medium text-[#6E8F72] mt-1.5">{{ restaurant.category }}</p>
+            <p class="text-xs font-medium text-[#6E8F72] mt-1.5">
+              {{ restaurant.category }}
+            </p>
 
             <p class="text-xs text-[#a3a79a] mt-3 leading-relaxed line-clamp-2 font-light">
               {{ restaurant.address || 'ไม่มีข้อมูลที่อยู่' }}
             </p>
           </button>
 
-          <div v-if="page < totalPages" class="pt-4 pb-2 flex justify-center">
-            <button @click="loadMore" :disabled="pending"
-              class="px-5 py-2 rounded-full bg-[#F7F8F5] text-[13px] font-medium text-[#6E8F72] hover:bg-[#e8e9e3] transition-all ring-1 ring-[#EEEFEA] disabled:opacity-50 disabled:cursor-not-allowed">
+          <div
+            v-if="page < totalPages"
+            class="pt-4 pb-2 flex justify-center"
+          >
+            <button
+              :disabled="pending"
+              class="px-5 py-2 rounded-full bg-[#F7F8F5] text-[13px] font-medium text-[#6E8F72] hover:bg-[#e8e9e3] transition-all ring-1 ring-[#EEEFEA] disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="loadMore"
+            >
               {{ pending ? 'กำลังโหลด...' : 'โหลดเพิ่มเติม ↓' }}
             </button>
           </div>
         </template>
       </div>
 
-      <AddRestaurantPanel :is-open="isAddMode" :clicked-lat="clickedLat" :clicked-lng="clickedLng"
-        :current-user="currentUser" @close="isAddMode = false" @submit="submitNewRestaurantToApi" />
-
+      <AddRestaurantPanel
+        :is-open="isAddMode"
+        :clicked-lat="clickedLat"
+        :clicked-lng="clickedLng"
+        :current-user="currentUser"
+        @close="isAddMode = false"
+        @submit="submitNewRestaurantToApi"
+      />
     </div>
 
-    <div class="hidden md:block flex-1 relative z-0">
+    <div class="flex-1 relative z-0 min-h-[300px]">
       <ClientOnly>
-        <GoogleMap ref="mapRef" :api-key="config.public.googleMapsApiKey" style="width: 100%; height: 100%"
-          :center="center" :zoom="zoom" :styles="mapStyles" :disable-default-ui="true" :zoom-control="true"
-          @click="handleMapClick">
-          
-          <Marker v-for="restaurant in validRestaurants" :key="`marker-${restaurant.id}`" :options="{
-            position: { lat: Number(restaurant.latitude), lng: Number(restaurant.longitude) },
-            title: restaurant.name,
-            icon: activeRestaurantId === restaurant.id ? activeMarkerIcon : markerIcon
-          }" @click="focusRestaurant(restaurant)" />
+        <GoogleMap
+          ref="mapRef"
+          :api-key="config.public.googleMapsApiKey"
+          style="width: 100%; height: 100%"
+          :center="center"
+          :zoom="zoom"
+          :styles="mapStyles"
+          :disable-default-ui="true"
+          :zoom-control="true"
+          @click="handleMapClick"
+        >
+          <Marker
+            v-for="restaurant in validRestaurants"
+            :key="`marker-${restaurant.id}`"
+            :options="{
+              position: { lat: Number(restaurant.latitude), lng: Number(restaurant.longitude) },
+              title: restaurant.name,
+              icon: activeRestaurantId === restaurant.id ? activeMarkerIcon : markerIcon
+            }"
+            @click="focusRestaurant(restaurant)"
+          />
 
-          <Marker 
-            v-if="isAddMode && clickedLat && clickedLng" 
+          <Marker
+            v-if="isAddMode && clickedLat && clickedLng"
             :options="{
               position: { lat: clickedLat, lng: clickedLng },
               icon: tempMarkerIcon,
               zIndex: 999 /* บังคับให้อยู่บนสุดเสมอ */
-            }" 
+            }"
           />
 
-          <InfoWindow v-if="activeRestaurant"
+          <InfoWindow
+            v-if="activeRestaurant"
             :options="{ position: activeInfoPosition, pixelOffset: { width: 0, height: -46 } }"
-            @closeclick="activeRestaurantId = null">
+            @closeclick="activeRestaurantId = null"
+          >
             <div class="font-['Prompt'] px-1 py-1 min-w-[170px]">
-              <h3 class="text-sm font-medium text-[#31352D] mb-1.5">{{ activeRestaurant.name }}</h3>
-              <p class="text-xs font-medium text-[#6E8F72] mb-2">{{ activeRestaurant.category }}</p>
+              <h3 class="text-sm font-medium text-[#31352D] mb-1.5">
+                {{ activeRestaurant.name }}
+              </h3>
+              <p class="text-xs font-medium text-[#6E8F72] mb-2">
+                {{ activeRestaurant.category }}
+              </p>
               <div class="flex items-center gap-1">
-                <svg class="w-3.5 h-3.5 text-[#E0A06E]" fill="currentColor" viewBox="0 0 20 20">
+                <svg
+                  class="w-3.5 h-3.5 text-[#E0A06E]"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
                   <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.063 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.285-3.958z" />
+                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.446a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.539-1.118l1.287-3.957a1 1 0 00-.363-1.118L2.063 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.285-3.958z"
+                  />
                 </svg>
                 <span class="text-xs font-medium text-[#8B9184]">{{ activeRestaurant.rating || 'New' }}</span>
               </div>
@@ -372,7 +498,6 @@ watch(isAddMode, (newVal) => {
         </template>
       </ClientOnly>
     </div>
-
   </div>
 </template>
 

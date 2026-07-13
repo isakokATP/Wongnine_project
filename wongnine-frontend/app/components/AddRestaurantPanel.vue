@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 const config = useRuntimeConfig()
 
@@ -82,13 +82,23 @@ const closePanel = () => {
   emit('close')
 }
 
+const trimField = (fieldName) => {
+  if (typeof form[fieldName] === 'string') {
+    form[fieldName] = form[fieldName].trim()
+  }
+}
+
 const handleSubmit = async () => {
   if (isSubmitting.value) return // กันกดซ้ำ
 
+  Object.keys(form).forEach((key) => {
+    trimField(key)
+  })
+  
   if (!props.currentUser) return alert('กรุณาล็อกอินก่อนเพิ่มร้านอาหาร')
   if (!form.name || !form.category) return alert('กรุณากรอกชื่อร้านและหมวดหมู่ให้ครบถ้วน')
   if (!form.latitude || !form.longitude) return alert('กรุณาจิ้มเลือกพิกัดร้านบนแผนที่')
-  if (!form.reviewComment.trim()) return alert('กรุณากรอกข้อความรีวิว')
+  if (!form.reviewComment) return alert('กรุณากรอกข้อความรีวิว')
   if (!form.reviewRating || form.reviewRating < 1 || form.reviewRating > 5) {
     return alert('กรุณาให้คะแนนระหว่าง 1-5')
   }
@@ -136,7 +146,6 @@ const handleSubmit = async () => {
   }
 
   // ส่ง payload พร้อม callback ให้ parent เป็นคนตัดสินว่าสำเร็จหรือไม่
-  // resetForm() จะถูกเรียกเฉพาะตอนสำเร็จเท่านั้น ไม่ล้างข้อมูลทิ้งถ้า API พัง
   emit('submit', payload, {
     onSuccess: () => {
       isSubmitting.value = false
