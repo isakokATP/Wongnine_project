@@ -29,7 +29,7 @@ export class ReviewsService {
   ) {}
 
   async create(createReviewDto: CreateReviewDto): Promise<Review> {
-    const { userId, comment, rating, restaurantId, newRestaurant } =
+    const { userId, comment, rating, restaurantId, newRestaurant, imageUrls } =
       createReviewDto;
 
     const user = await this.userRepository.findOneBy({ id: userId });
@@ -52,6 +52,7 @@ export class ReviewsService {
     const newReview = new Review();
     newReview.comment = comment;
     newReview.rating = rating;
+    newReview.imageUrls = imageUrls || [];
     newReview.user = user!;
     newReview.restaurant = targetRestaurant;
 
