@@ -5,11 +5,9 @@ import {
   IsNumber,
   IsBoolean,
   Min,
-  Max,
-  IsIn,
-  IsUrl,
-  ValidateIf,
-  Validate,
+  IsInt,
+  Matches,
+  IsArray,
 } from 'class-validator';
 import { NavigationProvided } from '../../common/validators/navigation-provided.validator';
 
@@ -24,23 +22,35 @@ export class CreateRestaurantDto {
 
   @IsOptional()
   @IsNumber()
-  averagePrice?: number;
-
-  @IsOptional()
-  @IsNumber()
   capacity?: number;
 
-  @IsOptional()
-  @IsBoolean()
-  isBreakfast?: boolean;
+  @IsInt()
+  @Min(0)
+  minPrice: number;
+
+  @IsInt()
+  @Min(0)
+  maxPrice: number;
 
   @IsOptional()
-  @IsBoolean()
-  isLunch?: boolean;
+  @IsArray()
+  @IsString({ each: true })
+  imageUrls?: string[];
 
   @IsOptional()
-  @IsBoolean()
-  isDinner?: boolean;
+  @IsArray()
+  @IsString({ each: true })
+  reviewImageUrls?: string[];
+
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+    message: 'รูปแบบเวลาต้องเป็น HH:mm เช่น 11:00',
+  })
+  openTime: string;
+
+  @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+    message: 'รูปแบบเวลาต้องเป็น HH:mm เช่น 18:00',
+  })
+  closeTime: string;
 
   @IsOptional()
   @IsBoolean()

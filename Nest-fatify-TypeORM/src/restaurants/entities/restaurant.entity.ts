@@ -20,19 +20,13 @@ export class Restaurant {
   category: string;
 
   @Column({ type: 'int', default: 0 })
-  averagePrice: number;
-
-  @Column({ type: 'int', default: 0 })
   capacity: number;
 
-  @Column({ type: 'boolean', default: false })
-  isBreakfast: boolean;
+  @Column({ type: 'varchar', length: 5, nullable: true })
+  openTime: string; // 'HH:mm'
 
-  @Column({ type: 'boolean', default: false })
-  isLunch: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  isDinner: boolean;
+  @Column({ type: 'varchar', length: 5, nullable: true })
+  closeTime: string; // 'HH:mm'
 
   @Column({ type: 'boolean', default: false })
   isQuickMeal: boolean;
@@ -46,8 +40,21 @@ export class Restaurant {
   @Column({ type: 'text', nullable: true })
   address: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  // ลบ
+  @Column({ type: 'int', default: 0 })
+  averagePrice: number;
+
+  @Column({ type: 'varchar', nullable: true })
   imageUrl: string;
+
+  @Column({ type: 'int', nullable: true })
+  minPrice: number;
+
+  @Column({ type: 'int', nullable: true })
+  maxPrice: number;
+
+  @Column({ type: 'simple-array', nullable: true })
+  imageUrls: string[];
 
   @Column({ type: 'decimal', precision: 2, scale: 1, default: 0 })
   rating: number;

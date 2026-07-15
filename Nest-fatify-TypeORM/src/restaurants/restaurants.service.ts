@@ -27,40 +27,40 @@ export class RestaurantsService {
   ) {}
 
 async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
-  const { reviewUserId, reviewRating, reviewComment, ...restaurantData } =
-    createRestaurantDto;
+    const { reviewUserId, reviewRating, reviewComment, reviewImageUrls, ...restaurantData } =
+      createRestaurantDto;
 
-  // เช็คซ้ำจากชื่อ + พิกัด อนุญาตให้ชื่อซ้ำได้หากเป็นคนละสาขา (คนละพิกัด)
-  const existingRestaurant = await this.restaurantRepository.findOneBy({
-    name: restaurantData.name,
-    latitude: restaurantData.latitude,
-    longitude: restaurantData.longitude,
-  });
-  if (existingRestaurant) {
-    throw new ConflictException(
-      'Restaurant with this name already exists at this location',
-    );
-  }
-
-  if (reviewRating !== undefined) {
-    (restaurantData as Partial<Restaurant>).rating = reviewRating;
-  }
-
-  const newRestaurant = this.restaurantRepository.create(
-    restaurantData as Partial<Restaurant>,
-  );
-  const savedRestaurant = await this.restaurantRepository.save(newRestaurant);
-
-  if (reviewUserId && reviewRating !== undefined && reviewComment) {
-    await this.reviewsService.create({
-      userId: reviewUserId,
-      restaurantId: savedRestaurant.id,
-      rating: reviewRating,
-      comment: reviewComment,
+    const existingRestaurant = await this.restaurantRepository.findOneBy({
+      name: restaurantData.name,
+      latitude: restaurantData.latitude,
+      longitude: restaurantData.longitude,
     });
-  }
+    if (existingRestaurant) {
+      throw new ConflictException(
+        'Restaurant with this name already exists at this location',
+      );
+    }
 
-  return savedRestaurant;
+    if (reviewRating !== undefined) {
+      (restaurantData as Partial<Restaurant>).rating = reviewRating;
+    }
+
+    const newRestaurant = this.restaurantRepository.create(
+      restaurantData as Partial<Restaurant>,
+    );
+    const savedRestaurant = await this.restaurantRepository.save(newRestaurant);
+
+    if (reviewUserId && reviewRating !== undefined && reviewComment) {
+      await this.reviewsService.create({
+        userId: reviewUserId,
+        restaurantId: savedRestaurant.id,
+        rating: reviewRating,
+        comment: reviewComment,
+        imageUrls: reviewImageUrls,   // ส่งต่อรูปรีวิวเข้าไปด้วย
+      });
+    }
+
+    return savedRestaurant;
 }
 
   async findOne(id: number): Promise<Restaurant> {
@@ -166,7 +166,6 @@ async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
     minPrice?: number,
     maxPrice?: number,
     capacity?: number,
-    meal?: string,
     isQuickMeal?: boolean,
   ) {
     const queryBuilder =
@@ -183,30 +182,18 @@ async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
     }
 
     if (minPrice !== undefined) {
-      queryBuilder.andWhere('restaurant.averagePrice >= :minPrice', {
-        minPrice,
-      });
+      queryBuilder.andWhere('restaurant.maxPrice >= :minPrice', { minPrice });
     }
 
     if (maxPrice !== undefined) {
-      queryBuilder.andWhere('restaurant.averagePrice <= :maxPrice', {
-        maxPrice,
-      });
+      queryBuilder.andWhere('restaurant.minPrice <= :maxPrice', { maxPrice });
     }
 
     if (capacity !== undefined) {
       queryBuilder.andWhere('restaurant.capacity >= :capacity', { capacity });
     }
 
-    if (meal) {
-      if (meal.toLowerCase() === 'breakfast') {
-        queryBuilder.andWhere('restaurant.isBreakfast = true');
-      } else if (meal.toLowerCase() === 'lunch') {
-        queryBuilder.andWhere('restaurant.isLunch = true');
-      } else if (meal.toLowerCase() === 'dinner') {
-        queryBuilder.andWhere('restaurant.isDinner = true');
-      }
-    }
+    // ลบ if (meal) { ... } ทิ้งทั้งหมด
 
     if (isQuickMeal !== undefined) {
       queryBuilder.andWhere('restaurant.isQuickMeal = :isQuickMeal', {

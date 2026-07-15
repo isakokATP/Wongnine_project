@@ -12,13 +12,14 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { CreateReviewDto } from '../reviews/dto/create-review.dto';
 import { ReviewsService } from '../reviews/reviews.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
@@ -35,11 +36,6 @@ export class RestaurantsController {
   async create(@Body() createRestaurantDto: CreateRestaurantDto) {
     return await this.restaurantsService.create(createRestaurantDto);
   }
-
-  // @Get()
-  // async findAll() {
-  //   return await this.restaurantsService.findAll();
-  // }
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
@@ -69,11 +65,6 @@ export class RestaurantsController {
     return await this.reviewsService.create(createReviewDto);
   }
 
-  // @Get(':id/reviews')
-  // async getReviews(@Param('id', ParseIntPipe) id: number) {
-  //   return await this.reviewsService.findByRestaurant(id);
-  // }
-
   @Get()
   findAll(
     @Query('page') page: string = '1',
@@ -83,7 +74,6 @@ export class RestaurantsController {
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
     @Query('capacity') capacity?: string,
-    @Query('meal') meal?: string,
     @Query('isQuickMeal') isQuickMeal?: string,
   ) {
     let isQuickMealBool: boolean | undefined = undefined;
@@ -98,7 +88,6 @@ export class RestaurantsController {
       minPrice ? +minPrice : undefined,
       maxPrice ? +maxPrice : undefined,
       capacity ? +capacity : undefined,
-      meal,
       isQuickMealBool,
     );
   }
@@ -129,6 +118,26 @@ export class RestaurantsController {
   uploadImage(@UploadedFile() file: Express.Multer.File) {
     return {
       imageUrl: `/uploads/${file.filename}`,
+    };
+  }
+
+  @Post('upload-images')
+  @UseInterceptors(
+    FilesInterceptor('files', 3, {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  uploadImages(@UploadedFiles() files: Express.Multer.File[]) {
+    return {
+      imageUrls: files.map((file) => `/uploads/${file.filename}`),
     };
   }
 }

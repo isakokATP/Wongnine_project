@@ -11,7 +11,10 @@ export class Review {
     comment: string;
 
     @Column({ type: 'decimal', precision: 2, scale: 1 })
-    rating: number; // คะแนนรีวิวของ user คนนี้
+    rating: number;
+
+    @Column({ type: 'simple-array', nullable: true })
+    imageUrls: string[];
 
     @CreateDateColumn()
     createdAt: Date;

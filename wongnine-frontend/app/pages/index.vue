@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { GoogleMap, Marker, InfoWindow } from 'vue3-google-map'
 
-definePageMeta({ middleware: 'auth', ssr: false })
+definePageMeta({ ssr: false })
 
 const config = useRuntimeConfig()
 
@@ -21,7 +21,6 @@ const searchQuery = ref('')
 const debouncedSearchQuery = ref('') // เก็บค่าหลังจากหน่วงเวลา
 const filterCategory = ref('')
 const filterCapacity = ref('')
-const filterMeal = ref('')
 const filterQuickMeal = ref(false)
 
 const page = ref(1)
@@ -51,8 +50,7 @@ const apiQuery = computed(() => {
 
   if (debouncedSearchQuery.value) q.search = debouncedSearchQuery.value
   if (filterCategory.value) q.category = filterCategory.value
-  if (filterCapacity.value) q.capacity = filterCapacity.value
-  if (filterMeal.value) q.meal = filterMeal.value
+  if (filterCapacity.value) q.capacity = filterCapacity.value 
   if (filterQuickMeal.value) q.isQuickMeal = 'true'
 
   return q
@@ -76,7 +74,7 @@ watch(response, (newVal) => {
   }
 }, { immediate: true })
 
-watch([debouncedSearchQuery, filterCategory, filterCapacity, filterMeal, filterQuickMeal], () => {
+watch([debouncedSearchQuery, filterCategory, filterCapacity, filterQuickMeal], () => {
   page.value = 1
   activeRestaurantId.value = null
 })
@@ -91,8 +89,15 @@ const clearFilters = () => {
   searchQuery.value = ''
   filterCategory.value = ''
   filterCapacity.value = ''
-  filterMeal.value = ''
   filterQuickMeal.value = false
+}
+
+const openAddMode = () => {
+  if (!currentUser.value) {
+    navigateTo('/login')
+    return
+  }
+  isAddMode.value = true
 }
 
 const validRestaurants = computed(() => restaurantsList.value.filter(r => r.latitude && r.longitude))
@@ -225,6 +230,13 @@ watch(isAddMode, (newVal) => {
         >
           {{ currentUser.name }} · ออกจากระบบ
         </button>
+        <NuxtLink
+          v-else
+          to="/login"
+          class="text-xs font-medium text-[#6E8F72] hover:text-[#5a765e] flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F7F8F5] hover:bg-[#e8e9e3] transition-colors"
+        >
+          เข้าสู่ระบบ
+        </NuxtLink>
         <p class="text-sm text-[#9a9d92] mt-1 font-light">
           ค้นหาร้านอาหารที่ใช่ ใกล้คุณ
         </p>
@@ -264,10 +276,9 @@ watch(isAddMode, (newVal) => {
             </button>
             <button
               class="text-xs font-semibold text-white bg-[#6E8F72] hover:bg-[#5a765e] px-3 py-1 rounded-md transition-colors shadow-sm"
-              @click="isAddMode = true"
+              @click="openAddMode"
             >
-              +
-              เพิ่มร้าน
+              + เพิ่มร้าน
             </button>
           </div>
         </div>
@@ -294,24 +305,6 @@ watch(isAddMode, (newVal) => {
             </option>
             <option value="อาหารอีสาน">
               อาหารอีสาน
-            </option>
-          </select>
-
-          <select
-            v-model="filterMeal"
-            class="h-9 px-3 rounded-lg bg-[#F7F8F5] text-[13px] text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10 transition-all cursor-pointer"
-          >
-            <option value="">
-              ทุกมื้อ
-            </option>
-            <option value="breakfast">
-              มื้อเช้า
-            </option>
-            <option value="lunch">
-              มื้อเที่ยง
-            </option>
-            <option value="dinner">
-              มื้อเย็น
             </option>
           </select>
 
