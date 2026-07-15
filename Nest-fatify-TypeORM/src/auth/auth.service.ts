@@ -18,18 +18,18 @@ export class AuthService {
     }
 
     async login(loginDto: LoginDto) {
-        const user = await this.usersService.findByEmailWithPassword(loginDto.email);
-        if (!user) {
-            throw new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
-        }
-
-        const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-        if (!isPasswordValid) {
-            throw new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
-        }
-
-        return this.generateToken(user.id, user.email);
+    const user = await this.usersService.findByEmailWithPassword(loginDto.email);
+    if (!user || !user.password) {
+        throw new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
+
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    if (!isPasswordValid) {
+        throw new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    }
+
+    return this.generateToken(user.id, user.email);
+}
 
     private generateToken(userId: number, email: string) {
         const payload = { sub: userId, email };

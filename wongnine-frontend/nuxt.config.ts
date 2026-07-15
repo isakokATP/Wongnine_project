@@ -1,21 +1,15 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui'
   ],
 
-  devtools: {
-    enabled: true
+  devtools: { enabled: true },
+
+  app: {
   },
 
   css: ['~/assets/css/main.css'],
-
-  routeRules: {
-    '/': { prerender: true }
-  },
-
-  compatibilityDate: '2025-01-15',
 
   runtimeConfig: {
     public: {
@@ -23,6 +17,12 @@ export default defineNuxtConfig({
       googleMapsApiKey: process.env.NUXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
     }
   },
+
+  // routeRules: {
+  //   '/': { prerender: true }
+  // },
+
+  compatibilityDate: '2025-01-15',
 
   eslint: {
     config: {
