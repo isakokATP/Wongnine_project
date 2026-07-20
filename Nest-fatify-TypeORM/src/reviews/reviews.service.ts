@@ -5,6 +5,7 @@ import {
   Inject,
   forwardRef,
   ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -41,6 +42,13 @@ export class ReviewsService {
       const found = await this.restaurantsService.findOne(restaurantId);
       if (!found) throw new NotFoundException('ไม่พบร้านอาหารที่ระบุ');
       targetRestaurant = found;
+
+      const existingReview = await this.reviewRepository.findOne({
+        where: { user: { id: userId }, restaurant: { id: restaurantId } },
+      });
+      if (existingReview) {
+        throw new ConflictException('คุณได้รีวิวร้านนี้ไปแล้ว');
+      }
     } else if (newRestaurant) {
       targetRestaurant = await this.restaurantsService.create(newRestaurant);
     } else {
@@ -101,14 +109,11 @@ export class ReviewsService {
   // }
 
   async update(id: number, updateReviewDto: UpdateReviewDto): Promise<Review> {
-    const { userId, comment, rating } = updateReviewDto;
+    const { userId, comment, rating, imageUrls } = updateReviewDto;
 
     const review = await this.reviewRepository.findOne({
       where: { id },
-      relations: {
-        user: true,
-        restaurant: true,
-      },
+      relations: { user: true, restaurant: true },
     });
 
     if (!review) throw new NotFoundException('Not found your review!!!');
@@ -121,6 +126,10 @@ export class ReviewsService {
 
     if (comment !== undefined) {
       review.comment = comment;
+    }
+
+    if (imageUrls !== undefined) {
+      review.imageUrls = imageUrls;
     }
 
     let isRatingChanged = false;
@@ -140,14 +149,12 @@ export class ReviewsService {
         0,
       );
       let averageRating = totalScore / allReviews.length;
-
       averageRating = Math.round(averageRating * 10) / 10;
 
       await this.restaurantsService.updateRating(
         review.restaurant.id,
         averageRating,
       );
-
       updateReview.restaurant.rating = averageRating;
     }
     return updateReview;

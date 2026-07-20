@@ -56,7 +56,21 @@ const handleMultiFileChange = (event, filesRef, previewsRef) => {
     previewsRef.value.push(URL.createObjectURL(file))
   })
 
-  event.target.value = '' // reset input เพื่อให้เลือกไฟล์เดิมซ้ำได้ถ้าลบออกแล้วอยากเพิ่มใหม่
+  event.target.value = ''
+}
+
+const handleRestaurantFileChange = (event) => {
+  handleMultiFileChange(event, restaurantImages, restaurantImagePreviews)
+}
+const handleReviewFileChange = (event) => {
+  handleMultiFileChange(event, reviewImages, reviewImagePreviews)
+}
+
+const removeRestaurantImageAt = (index) => {
+  removeImageAt(index, restaurantImages, restaurantImagePreviews)
+}
+const removeReviewImageAt = (index) => {
+  removeImageAt(index, reviewImages, reviewImagePreviews)
 }
 
 const removeImageAt = (index, filesRef, previewsRef) => {
@@ -187,29 +201,16 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div
-    v-if="isOpen"
-    class="absolute inset-0 bg-white z-20 flex flex-col h-full shadow-[2px_0_10px_rgba(0,0,0,0.05)] transform transition-transform duration-300"
-  >
+  <div v-if="isOpen"
+    class="absolute inset-0 bg-white z-20 flex flex-col h-full shadow-[2px_0_10px_rgba(0,0,0,0.05)] transform transition-transform duration-300">
     <div class="px-6 py-5 border-b border-[#EEEFEA] flex justify-between items-center bg-[#F7F8F5]">
       <h2 class="text-lg font-semibold text-[#31352D]">
         เพิ่มร้านอาหาร & รีวิวแรก
       </h2>
-      <button
-        class="text-[#a3a79a] hover:text-[#c17a4f] p-1"
-        @click="closePanel"
-      >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        ><path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M6 18L18 6M6 6l12 12"
-        /></svg>
+      <button class="text-[#a3a79a] hover:text-[#c17a4f] p-1" @click="closePanel">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </button>
     </div>
 
@@ -221,39 +222,30 @@ const handleSubmit = async () => {
         </h3>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1">ชื่อร้าน <span class="text-red-400">*</span></label>
-          <input
-            v-model="form.name"
-            type="text"
+          <label class="block text-xs font-medium text-[#8B9184] mb-1">ชื่อร้าน <span
+              class="text-red-400">*</span></label>
+          <input v-model="form.name" type="text"
             class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            @blur="form.name = form.name.trim()"
-          >
+            @blur="form.name = form.name.trim()">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">ที่ตั้งร้าน</label>
-          <textarea
-            v-model="form.address"
-            rows="1"
+          <textarea v-model="form.address" rows="1"
             class="w-full p-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            @blur="form.address = form.address.trim()"
-          />
+            @blur="form.address = form.address.trim()" />
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1">หมวดหมู่ <span class="text-red-400">*</span></label>
-          <select
-            v-model="form.category"
-            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-          >
+          <label class="block text-xs font-medium text-[#8B9184] mb-1">หมวดหมู่ <span
+              class="text-red-400">*</span></label>
+          <select v-model="form.category"
+            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
             <option value="ก๋วยเตี๋ยว">
               ก๋วยเตี๋ยว
             </option>
             <option value="คาเฟ่">
               คาเฟ่
-            </option>
-            <option value="อาหารจานเดียว">
-              อาหารจานเดียว
             </option>
             <option value="อาหารตามสั่ง">
               อาหารตามสั่ง
@@ -268,92 +260,50 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1">ช่วงราคา (บาท) <span class="text-red-400">*</span></label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-1">ช่วงราคา (บาท) <span
+              class="text-red-400">*</span></label>
           <div class="grid grid-cols-2 gap-3">
-            <input
-              v-model="form.minPrice"
-              type="number"
-              min="0"
-              placeholder="ต่ำสุด"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
-            <input
-              v-model="form.maxPrice"
-              type="number"
-              min="0"
-              placeholder="สูงสุด"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
+            <input v-model="form.minPrice" type="number" min="0" placeholder="ต่ำสุด"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
+            <input v-model="form.maxPrice" type="number" min="0" placeholder="สูงสุด"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-2">เวลาเปิด - ปิด <span class="text-red-400">*</span></label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-2">เวลาเปิด - ปิด <span
+              class="text-red-400">*</span></label>
           <div class="grid grid-cols-2 gap-3 mb-3">
-            <input
-              v-model="form.openTime"
-              type="time"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
-            <input
-              v-model="form.closeTime"
-              type="time"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
+            <input v-model="form.openTime" type="time"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
+            <input v-model="form.closeTime" type="time"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-2">รูปภาพร้านอาหาร (สูงสุด 3 รูป)</label>
           <div class="flex gap-2 flex-wrap">
-            <div
-              v-for="(preview, i) in restaurantImagePreviews"
-              :key="i"
-              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]"
-            >
-              <img
-                :src="preview"
-                class="w-full h-full object-cover"
-              >
-              <button
-                class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
-                @click="removeImageAt(i, restaurantImages, restaurantImagePreviews)"
-              >
-                <svg
-                  class="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                /></svg>
+            <div v-for="(preview, i) in restaurantImagePreviews" :key="i"
+              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]">
+              <img :src="preview" class="w-full h-full object-cover">
+              <button class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
+                @click="removeRestaurantImageAt(i)">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-            <label
-              v-if="restaurantImages.length < 3"
-              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]"
-            >
+            <label v-if="restaurantImages.length < 3"
+              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]">
               <span class="text-xs text-[#a3a79a]">+ เพิ่ม</span>
-              <input
-                type="file"
-                class="hidden"
-                accept="image/*"
-                multiple
-                @change="handleMultiFileChange($event, restaurantImages, restaurantImagePreviews)"
-              >
+              <input type="file" class="hidden" accept="image/*" multiple @change="handleRestaurantFileChange">
             </label>
           </div>
         </div>
 
         <label class="flex items-center gap-2 cursor-pointer">
-          <input
-            v-model="form.isQuickMeal"
-            type="checkbox"
-            class="w-4 h-4 rounded text-[#E0A06E] accent-[#E0A06E]"
-          >
+          <input v-model="form.isQuickMeal" type="checkbox" class="w-4 h-4 rounded text-[#E0A06E] accent-[#E0A06E]">
           <span class="text-sm font-medium text-[#31352D]">จานด่วน</span>
         </label>
       </div>
@@ -366,21 +316,16 @@ const handleSubmit = async () => {
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">อธิบายเส้นทาง (Directions)</label>
-          <textarea
-            v-model="form.directionsText"
-            rows="2"
+          <textarea v-model="form.directionsText" rows="2"
             class="w-full p-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            placeholder="เช่น เดินออกจาก MRT เลี้ยวซ้าย..."
-          />
+            placeholder="เช่น เดินออกจาก MRT เลี้ยวซ้าย..." />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-medium text-[#8B9184] mb-1">วิธีเดินทางหลัก</label>
-            <select
-              v-model="form.navigationType"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
+            <label class="block text-xs font-medium text-[#8B9184] mb-1">วิธีเดินทาง</label>
+            <select v-model="form.navigationType"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
               <option value="walking">
                 เดินเท้า (Walking)
               </option>
@@ -394,12 +339,9 @@ const handleSubmit = async () => {
           </div>
           <div>
             <label class="block text-xs font-medium text-[#8B9184] mb-1">ลิงก์ Google Maps</label>
-            <input
-              v-model="form.googleMapsUrl"
-              type="url"
+            <input v-model="form.googleMapsUrl" type="url"
               class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-              @blur="form.googleMapsUrl = form.googleMapsUrl.trim()"
-            >
+              @blur="form.googleMapsUrl = form.googleMapsUrl.trim()">
           </div>
         </div>
 
@@ -418,69 +360,37 @@ const handleSubmit = async () => {
         </h3>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1">คะแนน (1-5 ดาว) <span class="text-red-400">*</span></label>
-          <input
-            v-model="form.reviewRating"
-            type="number"
-            min="1"
-            max="5"
-            step="0.5"
-            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10"
-          >
+          <label class="block text-xs font-medium text-[#8B9184] mb-1">คะแนน (1-5 ดาว) <span
+              class="text-red-400">*</span></label>
+          <input v-model="form.reviewRating" type="number" min="1" max="5" step="0.5"
+            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10">
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1">ข้อความรีวิว <span class="text-red-400">*</span></label>
-          <textarea
-            v-model="form.reviewComment"
-            rows="3"
+          <label class="block text-xs font-medium text-[#8B9184] mb-1">ข้อความรีวิว <span
+              class="text-red-400">*</span></label>
+          <textarea v-model="form.reviewComment" rows="3"
             class="w-full p-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10"
-            placeholder="รสชาติเป็นยังไงบ้าง..."
-            @blur="form.reviewComment = form.reviewComment.trim()"
-          />
+            placeholder="รสชาติเป็นยังไงบ้าง..." @blur="form.reviewComment = form.reviewComment.trim()" />
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-2">รูปภาพอาหาร/เมนู (สูงสุด 3 รูป)</label>
           <div class="flex gap-2 flex-wrap">
-            <div
-              v-for="(preview, i) in reviewImagePreviews"
-              :key="i"
-              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]"
-            >
-              <img
-                :src="preview"
-                class="w-full h-full object-cover"
-              >
-              <button
-                class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
-                @click="removeImageAt(i, reviewImages, reviewImagePreviews)"
-              >
-                <svg
-                  class="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                ><path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                /></svg>
+            <div v-for="(preview, i) in reviewImagePreviews" :key="i"
+              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]">
+              <img :src="preview" class="w-full h-full object-cover">
+              <button class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
+                @click="removeReviewImageAt(i)">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-            <label
-              v-if="reviewImages.length < 3"
-              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]"
-            >
+            <label v-if="reviewImages.length < 3"
+              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]">
               <span class="text-xs text-[#a3a79a]">+ เพิ่ม</span>
-              <input
-                type="file"
-                class="hidden"
-                accept="image/*"
-                multiple
-                @change="handleMultiFileChange($event, reviewImages, reviewImagePreviews)"
-              >
+              <input type="file" class="hidden" accept="image/*" multiple @change="handleReviewFileChange">
             </label>
           </div>
         </div>
@@ -488,11 +398,9 @@ const handleSubmit = async () => {
     </div>
 
     <div class="p-5 border-t border-[#EEEFEA] bg-white">
-      <button
-        :disabled="isSubmitting"
+      <button :disabled="isSubmitting"
         class="w-full py-3 rounded-xl bg-[#6E8F72] hover:bg-[#5a765e] text-white font-medium text-sm transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-        @click="handleSubmit"
-      >
+        @click="handleSubmit">
         {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูลร้าน & รีวิว' }}
       </button>
     </div>

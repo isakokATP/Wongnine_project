@@ -1,24 +1,21 @@
-import {
-  IsNumber,
-  IsString,
-  IsOptional,
-  Min,
-  Max,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsString, IsNumber, Min, Max, IsOptional, IsArray } from 'class-validator';
 
 export class UpdateReviewDto {
-  @IsNotEmpty({ message: 'must identify your userId' })
-  @IsNumber()
-  userId: number;
+    @IsNumber()
+    userId: number;
 
-  @IsOptional()
-  @IsString()
-  comment?: string;
+    @IsOptional()
+    @IsString()
+    comment?: string;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(5)
-  rating?: number;
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Max(5)
+    rating?: number;
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    imageUrls?: string[];
 }
