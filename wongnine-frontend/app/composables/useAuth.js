@@ -33,12 +33,13 @@ export const useAuth = () => {
   }
 
   const logout = async () => {
-    await apiFetch('/auth/logout', {
-      method: 'POST'
-    })
+  try {
+    await apiFetch('/auth/logout', { method: 'POST' })
+  } finally {
     currentUser.value = null
-    navigateTo('/login')
+    navigateTo('/')
   }
+}
 
   const fetchMe = async () => {
     try {

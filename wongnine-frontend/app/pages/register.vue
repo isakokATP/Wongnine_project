@@ -49,10 +49,10 @@ const handleSubmit = async () => {
   <div class="min-h-screen flex items-center justify-center bg-[#F7F8F5] font-['Prompt'] px-4">
     <div class="w-full max-w-sm bg-white rounded-2xl shadow-[0_2px_20px_rgba(0,0,0,0.06)] p-8">
       <h1 class="text-2xl font-semibold text-[#31352D] tracking-tight mb-1">
-        สมัครสมาชิก
+        register
       </h1>
       <p class="text-sm text-[#9a9d92] font-light mb-8">
-        สร้างบัญชีเพื่อเริ่มต้นใช้งาน Wong Nine
+        create your Wong Nine account
       </p>
 
       <form
@@ -60,7 +60,7 @@ const handleSubmit = async () => {
         @submit.prevent="handleSubmit"
       >
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">ชื่อ</label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">username</label>
           <input
             v-model="name"
             type="text"
@@ -71,7 +71,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">อีเมล</label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">email</label>
           <input
             v-model="email"
             type="email"
@@ -82,7 +82,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">รหัสผ่าน</label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">password</label>
           <input
             v-model="password"
             type="password"
@@ -92,7 +92,7 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">ยืนยันรหัสผ่าน</label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-1.5">verify password</label>
           <input
             v-model="confirmPassword"
             type="password"
@@ -113,16 +113,16 @@ const handleSubmit = async () => {
           :disabled="isLoading"
           class="w-full h-11 rounded-xl bg-[#6E8F72] hover:bg-[#5a765e] text-white font-medium text-sm transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2"
         >
-          {{ isLoading ? 'กำลังสมัครสมาชิก...' : 'สมัครสมาชิก' }}
+          {{ isLoading ? 'กำลังสมัครสมาชิก...' : 'create account' }}
         </button>
       </form>
 
       <p class="text-center text-sm text-[#a3a79a] font-light mt-6">
-        มีบัญชีอยู่แล้ว?
+        already have an account?
         <NuxtLink
           to="/login"
           class="text-[#6E8F72] font-medium hover:underline"
-        >เข้าสู่ระบบ</NuxtLink>
+        >Login</NuxtLink>
       </p>
     </div>
   </div>
