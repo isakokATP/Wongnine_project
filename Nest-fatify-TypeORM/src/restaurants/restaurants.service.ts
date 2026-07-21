@@ -4,6 +4,7 @@ import {
   ConflictException,
   forwardRef,
   Inject,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,6 +13,7 @@ import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { ReviewsService } from '../reviews/reviews.service';
 import { Review } from '../reviews/entities/review.entity';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class RestaurantsService {
@@ -24,11 +26,58 @@ export class RestaurantsService {
 
     @InjectRepository(Review)
     private readonly reviewRepository: Repository<Review>,
+
+    @Inject(forwardRef(() => UsersService))
+    private readonly usersService: UsersService,
   ) {}
+
+// async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
+//     const { reviewUserId, reviewRating, reviewComment, reviewImageUrls, ...restaurantData } =
+//       createRestaurantDto;
+
+//     const existingRestaurant = await this.restaurantRepository.findOneBy({
+//       name: restaurantData.name,
+//       latitude: restaurantData.latitude,
+//       longitude: restaurantData.longitude,
+//     });
+//     if (existingRestaurant) {
+//       throw new ConflictException(
+//         'Restaurant with this name already exists at this location',
+//       );
+//     }
+
+//     if (reviewRating !== undefined) {
+//       (restaurantData as Partial<Restaurant>).rating = reviewRating;
+//     }
+
+//     const newRestaurant = this.restaurantRepository.create(
+//       restaurantData as Partial<Restaurant>,
+//     );
+//     const savedRestaurant = await this.restaurantRepository.save(newRestaurant);
+
+//     if (reviewUserId && reviewRating !== undefined && reviewComment) {
+//       await this.reviewsService.create({
+//         userId: reviewUserId,
+//         restaurantId: savedRestaurant.id,
+//         rating: reviewRating,
+//         comment: reviewComment,
+//         imageUrls: reviewImageUrls,   // ส่งต่อรูปรีวิวเข้าไปด้วย
+//       });
+//     }
+
+//     return savedRestaurant;
+// }
 
 async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
     const { reviewUserId, reviewRating, reviewComment, reviewImageUrls, ...restaurantData } =
       createRestaurantDto;
+
+    if (reviewUserId) {
+      const user = await this.usersService.findOne(reviewUserId);
+      if (!user.isVerified) {
+        throw new ForbiddenException('กรุณายืนยันอีเมลก่อนเพิ่มร้านอาหาร');
+      }
+    }
 
     const existingRestaurant = await this.restaurantRepository.findOneBy({
       name: restaurantData.name,
@@ -39,6 +88,11 @@ async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
       throw new ConflictException(
         'Restaurant with this name already exists at this location',
       );
+    }
+
+    // use for autogenarated google maps url
+    if (!restaurantData.googleMapsUrl && restaurantData.latitude && restaurantData.longitude) {
+      restaurantData.googleMapsUrl = `https://www.google.com/maps?q=${restaurantData.latitude},${restaurantData.longitude}`;
     }
 
     if (reviewRating !== undefined) {
@@ -56,7 +110,7 @@ async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
         restaurantId: savedRestaurant.id,
         rating: reviewRating,
         comment: reviewComment,
-        imageUrls: reviewImageUrls,   // ส่งต่อรูปรีวิวเข้าไปด้วย
+        imageUrls: reviewImageUrls,
       });
     }
 
