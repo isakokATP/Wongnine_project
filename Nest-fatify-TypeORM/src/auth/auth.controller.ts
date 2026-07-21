@@ -1,57 +1,107 @@
-import { Controller, Post, Body, Res, Get, UseGuards, Req, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Get,
+  UseGuards,
+  Req,
+  HttpCode,
+  UnauthorizedException,
+  Query,
+} from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
-const COOKIE_NAME = 'access_token';
-const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // cookie เก็บได้สูงสุด 7 วัน
+const ACCESS_COOKIE = 'access_token';
+const REFRESH_COOKIE = 'refresh_token';
+const ACCESS_MAX_AGE = 15 * 60 * 1000; // 15 minutes
+const REFRESH_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
-    @Post('register')
-    async register(
-        @Body() createUserDto: CreateUserDto,
-        @Res({ passthrough: true }) res: Response,
-    ) {
-        const { accessToken } = await this.authService.register(createUserDto);
-        this.setCookie(res, accessToken);
-        return { message: 'สมัครสมาชิกสำเร็จ' };
-    }
+  private setCookies(res: Response, accessToken: string, refreshToken: string) {
+    res.cookie(ACCESS_COOKIE, accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: ACCESS_MAX_AGE,
+    });
+    res.cookie(REFRESH_COOKIE, refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: REFRESH_MAX_AGE,
+      path: '/auth', // /auth only, so it won't be sent with requests to other paths
+    });
+  }
 
-    @Post('login')
-    @HttpCode(200)
-    async login(
-        @Body() loginDto: LoginDto,
-        @Res({ passthrough: true }) res: Response,
-    ) {
-        const { accessToken } = await this.authService.login(loginDto);
-        this.setCookie(res, accessToken);
-        return { message: 'เข้าสู่ระบบสำเร็จ' };
-    }
+  @Post('register')
+  async register(
+    @Body() dto: CreateUserDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken } = await this.authService.register(dto);
+    this.setCookies(res, accessToken, refreshToken);
+    return { message: 'สมัครสมาชิกสำเร็จ' };
+  }
 
-    @Post('logout')
-    @HttpCode(200)
-    logout(@Res({ passthrough: true }) res: Response) {
-        res.clearCookie(COOKIE_NAME);
-        return { message: 'ออกจากระบบสำเร็จ' };
-    }
+  @Post('login')
+  @HttpCode(200)
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, refreshToken } = await this.authService.login(dto);
+    this.setCookies(res, accessToken, refreshToken);
+    return { message: 'เข้าสู่ระบบสำเร็จ' };
+  }
 
-    @Get('me')
-    @UseGuards(JwtAuthGuard)
-    getMe(@Req() req: Request) {
-        return req.user;
-    }
+  @Post('refresh')
+  @HttpCode(200)
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const oldRefreshToken = req.cookies?.[REFRESH_COOKIE];
+    if (!oldRefreshToken) throw new UnauthorizedException('ไม่พบ session');
 
-    private setCookie(res: Response, token: string) {
-        res.cookie(COOKIE_NAME, token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // https เท่านั้นตอน production
-            sameSite: 'lax',
-            maxAge: COOKIE_MAX_AGE,
-        });
-    }
+    const { accessToken, refreshToken } =
+      await this.authService.refresh(oldRefreshToken);
+    this.setCookies(res, accessToken, refreshToken);
+    return { message: 'ต่ออายุ session สำเร็จ' };
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE];
+    await this.authService.revokeRefreshToken(refreshToken);
+    res.clearCookie(ACCESS_COOKIE);
+    res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+    return { message: 'ออกจากระบบสำเร็จ' };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getMe(@Req() req: Request) {
+    return req.user;
+  }
+
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return await this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  async resendVerification(@Req() req: Request) {
+    return await this.authService.resendVerification((req.user as any).id);
+  }
 }
