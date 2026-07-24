@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsEnum,
   MinLength,
+  Matches,
 } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
@@ -20,6 +21,10 @@ export class CreateUserDto {
 
   @IsString()
   @MinLength(8, { message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' })
+  // 🌟 2. เพิ่มเงื่อนไขตรวจสอบอักขระพิเศษ
+  @Matches(/(?=.*[!@#$%^&*(),.?":{}|<>\-_])/, {
+    message: 'รหัสผ่านต้องมีอักขระพิเศษอย่างน้อย 1 ตัว (เช่น !@#$%)',
+  })
   password: string;
 
   @IsOptional()

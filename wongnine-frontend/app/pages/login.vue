@@ -6,6 +6,7 @@ useHead({
 })
 
 const { login } = useAuth()
+const config = useRuntimeConfig()
 
 const email = ref('')
 const password = ref('')
@@ -44,53 +45,58 @@ const handleSubmit = async () => {
         Login to your account
       </p>
 
-      <form
-        class="space-y-4"
-        @submit.prevent="handleSubmit"
-      >
+      <form class="space-y-4" @submit.prevent="handleSubmit">
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1.5">email</label>
-          <input
-            v-model="email"
-            type="email"
-            autocomplete="email"
+          <input v-model="email" type="email" autocomplete="email"
             class="w-full h-11 px-4 rounded-xl bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#6E8F72]/10 transition-all"
-            @blur="email = email.trim()"
-          >
+            @blur="email = email.trim()">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1.5">password</label>
-          <input
-            v-model="password"
-            type="password"
-            autocomplete="current-password"
-            class="w-full h-11 px-4 rounded-xl bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#6E8F72]/10 transition-all"
-          >
+          <input v-model="password" type="password" autocomplete="current-password"
+            class="w-full h-11 px-4 rounded-xl bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#6E8F72]/10 transition-all">
         </div>
 
-        <p
-          v-if="errorMessage"
-          class="text-xs font-medium text-[#c17a4f] bg-[#FBF1EC] rounded-lg px-3 py-2"
-        >
+        <p v-if="errorMessage" class="text-xs font-medium text-[#c17a4f] bg-[#FBF1EC] rounded-lg px-3 py-2">
           {{ errorMessage }}
         </p>
 
-        <button
-          type="submit"
-          :disabled="isLoading"
-          class="w-full h-11 rounded-xl bg-[#6E8F72] hover:bg-[#5a765e] text-white font-medium text-sm transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-        >
+        <button type="submit" :disabled="isLoading"
+          class="w-full h-11 rounded-xl bg-[#6E8F72] hover:bg-[#5a765e] text-white font-medium text-sm transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed mt-2">
           {{ isLoading ? 'กำลังเข้าสู่ระบบ...' : 'Login' }}
         </button>
+
+        <div class="mt-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex-1 h-px bg-[#EEEFEA]" />
+            <span class="text-xs text-[#a3a79a]">หรือ</span>
+            <div class="flex-1 h-px bg-[#EEEFEA]" />
+          </div>
+
+          <div class="space-y-2">
+
+            <a :href="`${config.public.apiBase}/auth/google`"
+               class="flex items-center justify-center gap-2 w-full h-11 rounded-xl border border-[#EEEFEA]
+               hover:bg-[#F7F8F5] transition-colors text-sm font-medium text-[#31352D]">
+              <span class="w-5 h-5 rounded-full bg-[#4285F4] text-white flex items-center justify-center text-xs font-bold">G</span>
+              เข้าสู่ระบบด้วย Google
+            </a>
+
+            <a :href="`${config.public.apiBase}/auth/microsoft`"
+               class="flex items-center justify-center gap-2 w-full h-11 rounded-xl border border-[#EEEFEA]
+               hover:bg-[#F7F8F5] transition-colors text-sm font-medium text-[#31352D]">
+              <span class="w-5 h-5 rounded-full bg-[#00A4EF] text-white flex items-center justify-center text-xs font-bold">M</span>
+              เข้าสู่ระบบด้วย Microsoft
+            </a>
+          </div>
+        </div>
       </form>
 
       <p class="text-center text-sm text-[#a3a79a] font-light mt-6">
         already have an account?
-        <NuxtLink
-          to="/register"
-          class="text-[#6E8F72] font-medium hover:underline"
-        >Register</NuxtLink>
+        <NuxtLink to="/register" class="text-[#6E8F72] font-medium hover:underline">Register</NuxtLink>
       </p>
     </div>
   </div>

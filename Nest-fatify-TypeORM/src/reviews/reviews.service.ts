@@ -29,12 +29,16 @@ export class ReviewsService {
     private userRepository: Repository<User>,
   ) {}
 
-  async create(createReviewDto: CreateReviewDto): Promise<Review> {
+async create(createReviewDto: CreateReviewDto): Promise<Review> {
     const { userId, comment, rating, restaurantId, newRestaurant, imageUrls } =
       createReviewDto;
 
     const user = await this.userRepository.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('ไม่พบผู้ใช้งานนี้ในระบบ');
+
+    if (!user.isVerified) {
+      throw new ForbiddenException('กรุณายืนยันอีเมลก่อนเขียนรีวิว');
+    }
 
     let targetRestaurant: Restaurant;
 
@@ -81,7 +85,7 @@ export class ReviewsService {
     savedReview.restaurant.rating = averageRating;
 
     return savedReview;
-  }
+}
 
   async findOne(id: number): Promise<Review> {
     const review = await this.reviewRepository.findOne({

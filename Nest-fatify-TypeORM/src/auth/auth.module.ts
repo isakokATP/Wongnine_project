@@ -9,7 +9,8 @@ import { RefreshToken } from './entities/refresh-token.entity';
 import { UsersModule } from '../users/users.module';
 import { EmailVerification } from './entities/email-verification.entity';
 import { MailModule } from '../mail/mail.module';
-
+import { GoogleStrategy } from './google.strategy';
+import { MicrosoftStrategy } from './microsoft.strategy';
 
 @Module({
     imports: [
@@ -19,11 +20,11 @@ import { MailModule } from '../mail/mail.module';
         TypeOrmModule.forFeature([RefreshToken, EmailVerification]),
         JwtModule.register({
             secret: process.env.JWT_SECRET || 'dev-secret-change-this-in-production',
-            signOptions: { expiresIn: '15m' }, // เปลี่ยนจาก 7d
+            signOptions: { expiresIn: '15m' },
         }),
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy],
+    providers: [AuthService, JwtStrategy, GoogleStrategy, MicrosoftStrategy],
     exports: [AuthService],
 })
 export class AuthModule {}

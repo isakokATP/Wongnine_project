@@ -39,6 +39,16 @@ export class UsersService {
     return await this.userRepository.save(newUser);
   }
 
+  async createOAuthUser(email: string, name: string): Promise<User> {
+    const newUser = this.userRepository.create({
+      email,
+      name,
+      password: null,
+      isVerified: true,
+    });
+    return await this.userRepository.save(newUser);
+  }
+
   async findAll(): Promise<User[]> {
     // password ไม่ติดมาอยู่แล้วเพราะ select:false ที่ entity
     return await this.userRepository.find({
@@ -61,6 +71,10 @@ export class UsersService {
       .addSelect('user.password')
       .where('user.email = :email', { email })
       .getOne();
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return await this.userRepository.findOneBy({ email });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {

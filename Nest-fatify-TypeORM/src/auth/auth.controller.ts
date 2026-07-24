@@ -15,6 +15,8 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { GoogleAuthGuard } from './google-auth.guard';
+import { MicrosoftAuthGuard } from './microsoft-auth.guard';
 
 const ACCESS_COOKIE = 'access_token';
 const REFRESH_COOKIE = 'refresh_token';
@@ -40,7 +42,8 @@ export class AuthController {
       path: '/auth', // /auth only, so it won't be sent with requests to other paths
     });
   }
-
+  
+  // Login, Register, Refresh, Logout, GetMe, VerifyEmail, ResendVerification
   @Post('register')
   async register(
     @Body() dto: CreateUserDto,
@@ -103,5 +106,45 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async resendVerification(@Req() req: Request) {
     return await this.authService.resendVerification((req.user as any).id);
+  }
+
+  // OAuth routes for Google and Microsoft
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth() {
+    // Passport guard จะ redirect ไปหน้า Google consent screen ให้เอง ไม่ต้องเขียนอะไรในนี้
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const { accessToken, refreshToken } = await this.authService.oauthLogin(
+      req.user as any,
+    );
+    this.setCookies(res, accessToken, refreshToken);
+
+    const frontendUrl = (
+      process.env.FRONTEND_URL || 'http://localhost:3000'
+    ).replace(/\/$/, '');
+    return res.redirect(frontendUrl);
+  }
+
+  @Get('microsoft')
+  @UseGuards(MicrosoftAuthGuard)
+  async microsoftAuth() {}
+
+  @Get('microsoft/callback')
+  @UseGuards(MicrosoftAuthGuard)
+  async microsoftCallback(@Req() req: Request, @Res() res: Response) {
+    const { accessToken, refreshToken } = await this.authService.oauthLogin(
+      req.user as any,
+    );
+    this.setCookies(res, accessToken, refreshToken);
+
+    const frontendUrl = (
+      process.env.FRONTEND_URL || 'http://localhost:3000'
+    ).replace(/\/$/, '');
+    return res.redirect(frontendUrl);
   }
 }
