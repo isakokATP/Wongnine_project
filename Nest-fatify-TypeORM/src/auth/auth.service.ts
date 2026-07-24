@@ -97,6 +97,23 @@ export class AuthService {
     return this.issueTokens(user.id, user.email);
   }
 
+  async oauthLogin(profile: { email: string; name: string }) {
+    if (!profile.email) {
+      throw new BadRequestException('ไม่พบอีเมลจากผู้ให้บริการ');
+    }
+
+    let user = await this.usersService.findByEmail(profile.email);
+
+    if (!user) {
+      user = await this.usersService.createOAuthUser(
+        profile.email,
+        profile.name,
+      );
+    }
+
+    return this.issueTokens(user.id, user.email);
+  }
+
   async refresh(refreshTokenPlain: string) {
     if (!refreshTokenPlain)
       throw new UnauthorizedException('ไม่พบ refresh token');

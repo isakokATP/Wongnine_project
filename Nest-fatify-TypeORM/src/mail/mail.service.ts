@@ -24,8 +24,9 @@ export class MailService {
   }
 
   async sendVerificationEmail(toEmail: string, name: string, token: string) {
-    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-
+    const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+    
     try {
       await this.transporter.sendMail({
         from: `"Wong Nine" <${process.env.GMAIL_USER}>`,
