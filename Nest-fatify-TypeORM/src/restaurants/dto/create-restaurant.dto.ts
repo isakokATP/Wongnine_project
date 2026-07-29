@@ -95,4 +95,9 @@ export class CreateRestaurantDto {
   @IsOptional()
   @IsString()
   reviewComment?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  reviewDishNames?: string[];
 }

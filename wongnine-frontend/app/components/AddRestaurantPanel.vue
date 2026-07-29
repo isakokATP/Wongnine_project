@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref, watch } from 'vue'
 
+const { success, error: showError } = useAppToast()
 const config = useRuntimeConfig()
 
 const props = defineProps({
@@ -37,6 +38,23 @@ const restaurantImages = ref([]) // File[] สูงสุด 3 รูป (ร�
 const restaurantImagePreviews = ref([])
 const reviewImages = ref([]) // File[] สูงสุด 3 รูป (รูปอาหารในรีวิว)
 const reviewImagePreviews = ref([])
+const dishNames = ref([])
+const dishInput = ref('')
+
+const addDish = () => {
+  const trimmed = dishInput.value.trim()
+  if (!trimmed) return
+  if (dishNames.value.includes(trimmed)) {
+    dishInput.value = ''
+    return
+  }
+  dishNames.value.push(trimmed)
+  dishInput.value = ''
+}
+
+const removeDish = (index) => {
+  dishNames.value.splice(index, 1)
+}
 
 const isSubmitting = ref(false) // ป้องกันกดปุ่มซ้ำระหว่างรอ API
 
@@ -116,6 +134,8 @@ const resetForm = () => {
   form.latitude = null
   form.longitude = null
   form.reviewRating = 5
+  dishNames.value = []
+  dishInput.value = ''
   form.reviewComment = ''
 
   clearImageSet(restaurantImages, restaurantImagePreviews)
@@ -144,14 +164,14 @@ const handleSubmit = async () => {
     navigateTo('/login')
     return
   }
-  if (!form.name || !form.category) return alert('กรุณากรอกชื่อร้านและหมวดหมู่ให้ครบถ้วน')
-  if (!form.minPrice || !form.maxPrice) return alert('กรุณาระบุช่วงราคา')
-  if (Number(form.minPrice) > Number(form.maxPrice)) return alert('ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด')
-  if (!form.openTime || !form.closeTime) return alert('กรุณาระบุเวลาเปิด-ปิดร้าน')
-  if (!form.latitude || !form.longitude) return alert('กรุณาจิ้มเลือกพิกัดร้านบนแผนที่')
-  if (!form.reviewComment) return alert('กรุณากรอกข้อความรีวิว')
+  if (!form.name || !form.category) return showError('กรุณากรอกชื่อร้านและหมวดหมู่ให้ครบถ้วน')
+  if (!form.minPrice || !form.maxPrice) return showError('กรุณาระบุช่วงราคา')
+  if (Number(form.minPrice) > Number(form.maxPrice)) return showError('ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด')
+  if (!form.openTime || !form.closeTime) return showError('กรุณาระบุเวลาเปิด-ปิดร้าน')
+  if (!form.latitude || !form.longitude) return showError('กรุณาจิ้มเลือกพิกัดร้านบนแผนที่')
+  if (!form.reviewComment) return showError('กรุณากรอกข้อความรีวิว')
   if (!form.reviewRating || form.reviewRating < 1 || form.reviewRating > 5) {
-    return alert('กรุณาให้คะแนนระหว่าง 1-5')
+    return showError('กรุณาให้คะแนนระหว่าง 1-5')
   }
 
   isSubmitting.value = true
@@ -188,7 +208,8 @@ const handleSubmit = async () => {
     reviewUserId: props.currentUser.id,
     reviewRating: Number(form.reviewRating),
     reviewComment: form.reviewComment,
-    reviewImageUrls
+    reviewImageUrls,
+    reviewDishNames: dishNames.value,
   }
 
   emit('submit', payload, {
@@ -204,30 +225,15 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div
-    v-if="isOpen"
-    class="absolute inset-0 bg-white z-20 flex flex-col h-full shadow-[2px_0_10px_rgba(0,0,0,0.05)] transform transition-transform duration-300"
-  >
+  <div v-if="isOpen"
+    class="absolute inset-0 bg-white z-20 flex flex-col h-full shadow-[2px_0_10px_rgba(0,0,0,0.05)] transform transition-transform duration-300">
     <div class="px-6 py-5 border-b border-[#EEEFEA] flex justify-between items-center bg-[#F7F8F5]">
       <h2 class="text-lg font-semibold text-[#31352D]">
         เพิ่มร้านอาหาร & รีวิวแรก ({{ props.currentUser ? props.currentUser.name : 'กรุณาเข้าสู่ระบบ' }})
       </h2>
-      <button
-        class="text-[#a3a79a] hover:text-[#c17a4f] p-1"
-        @click="closePanel"
-      >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
+      <button class="text-[#a3a79a] hover:text-[#c17a4f] p-1" @click="closePanel">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
     </div>
@@ -240,36 +246,25 @@ const handleSubmit = async () => {
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">ชื่อร้าน (Restaurant Name)<span
-            class="text-red-400"
-          >*</span></label>
-          <input
-            v-model="form.name"
-            type="text"
+              class="text-red-400">*</span></label>
+          <input v-model="form.name" type="text"
             class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            @blur="form.name = form.name.trim()"
-          >
+            @blur="form.name = form.name.trim()">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">ที่ตั้งร้าน (Restaurant Address)<span
-            class="text-red-400"
-          >*</span></label>
-          <textarea
-            v-model="form.address"
-            rows="1"
+              class="text-red-400">*</span></label>
+          <textarea v-model="form.address" rows="1"
             class="w-full p-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            @blur="form.address = form.address.trim()"
-          />
+            @blur="form.address = form.address.trim()" />
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">หมวดหมู่ (Restaurant Category) <span
-            class="text-red-400"
-          >*</span></label>
-          <select
-            v-model="form.category"
-            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-          >
+              class="text-red-400">*</span></label>
+          <select v-model="form.category"
+            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
             <option value="อาหารจานเดียว">
               อาหารจานเดียว
             </option>
@@ -323,108 +318,56 @@ const handleSubmit = async () => {
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">ช่วงราคา (Price Range in THB) <span
-            class="text-red-400"
-          >*</span></label>
+              class="text-red-400">*</span></label>
           <div class="grid grid-cols-2 gap-3">
-            <input
-              v-model="form.minPrice"
-              type="number"
-              min="0"
-              placeholder="ต่ำสุด"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
-            <input
-              v-model="form.maxPrice"
-              type="number"
-              min="0"
-              placeholder="สูงสุด"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
+            <input v-model="form.minPrice" type="number" min="0" placeholder="ต่ำสุด"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
+            <input v-model="form.maxPrice" type="number" min="0" placeholder="สูงสุด"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
           </div>
         </div>
 
         <div>
           <label class="black text-xs font-medium text-[#8B9184] mb-1">จำนวนที่นั่ง (Capacity)</label>
-          <input
-            v-model="form.capacity"
-            type="number"
-            min="0"
-            placeholder="เช่นรองรับได้เยอะสุดจำนวน20คน"
-            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-          >
+          <input v-model="form.capacity" type="number" min="0" placeholder="เช่นรองรับได้เยอะสุดจำนวน20คน"
+            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-2">เวลาเปิด - ปิด (Opening - Closing Hours) <span
-            class="text-red-400"
-          >*</span></label>
+              class="text-red-400">*</span></label>
           <div class="grid grid-cols-2 gap-3 mb-3">
-            <input
-              v-model="form.openTime"
-              type="time"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
-            <input
-              v-model="form.closeTime"
-              type="time"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
+            <input v-model="form.openTime" type="time"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
+            <input v-model="form.closeTime" type="time"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-2">รูปภาพร้านอาหาร (สูงสุด 3 รูป/Max 3 Images)</label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-2">รูปภาพร้านอาหาร (สูงสุด 3 รูป/Max 3
+            Images)</label>
           <div class="flex gap-2 flex-wrap">
-            <div
-              v-for="(preview, i) in restaurantImagePreviews"
-              :key="i"
-              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]"
-            >
-              <img
-                :src="preview"
-                class="w-full h-full object-cover"
-              >
-              <button
-                class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
-                @click="removeRestaurantImageAt(i)"
-              >
-                <svg
-                  class="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+            <div v-for="(preview, i) in restaurantImagePreviews" :key="i"
+              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]">
+              <img :src="preview" class="w-full h-full object-cover">
+              <button class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
+                @click="removeRestaurantImageAt(i)">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <label
-              v-if="restaurantImages.length < 3"
-              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]"
-            >
+            <label v-if="restaurantImages.length < 3"
+              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]">
               <span class="text-xs text-[#a3a79a]">+ เพิ่ม</span>
-              <input
-                type="file"
-                class="hidden"
-                accept="image/*"
-                multiple
-                @change="handleRestaurantFileChange"
-              >
+              <input type="file" class="hidden" accept="image/*" multiple @change="handleRestaurantFileChange">
             </label>
           </div>
         </div>
 
         <label class="flex items-center gap-2 cursor-pointer">
-          <input
-            v-model="form.isQuickMeal"
-            type="checkbox"
-            class="w-4 h-4 rounded text-[#E0A06E] accent-[#E0A06E]"
-          >
+          <input v-model="form.isQuickMeal" type="checkbox" class="w-4 h-4 rounded text-[#E0A06E] accent-[#E0A06E]">
           <span class="text-sm font-medium text-[#31352D]">จานด่วน(Quick Meal)</span>
         </label>
       </div>
@@ -437,21 +380,16 @@ const handleSubmit = async () => {
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">อธิบายเส้นทาง (Directions)</label>
-          <textarea
-            v-model="form.directionsText"
-            rows="2"
+          <textarea v-model="form.directionsText" rows="2"
             class="w-full p-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            placeholder="เช่น เดินออกจาก MRT เลี้ยวซ้าย..."
-          />
+            placeholder="เช่น เดินออกจาก MRT เลี้ยวซ้าย..." />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-medium text-[#8B9184] mb-1">วิธีเดินทาง (Navigation Type)</label>
-            <select
-              v-model="form.navigationType"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-            >
+            <select v-model="form.navigationType"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
               <option value="walking">
                 เดินเท้า (Walking)
               </option>
@@ -465,12 +403,9 @@ const handleSubmit = async () => {
           </div>
           <div>
             <label class="block text-xs font-medium text-[#8B9184] mb-1">ลิงก์ Google Maps (Google Maps Link)</label>
-            <input
-              v-model="form.googleMapsUrl"
-              type="url"
+            <input v-model="form.googleMapsUrl" type="url"
               class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10"
-              @blur="form.googleMapsUrl = form.googleMapsUrl.trim()"
-            >
+              @blur="form.googleMapsUrl = form.googleMapsUrl.trim()">
           </div>
         </div>
 
@@ -490,74 +425,62 @@ const handleSubmit = async () => {
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">คะแนน (1-5 ดาว) (Review Rating)<span
-            class="text-red-400"
-          >*</span></label>
-          <input
-            v-model="form.reviewRating"
-            type="number"
-            min="1"
-            max="5"
-            step="0.5"
-            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10"
-          >
+              class="text-red-400">*</span></label>
+          <input v-model="form.reviewRating" type="number" min="1" max="5" step="0.5"
+            class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-[#8B9184] mb-1">เมนูที่สั่ง (ถ้ามี)</label>
+          <div class="flex gap-2 mb-2">
+            <input v-model="dishInput" type="text" placeholder="พิมพ์ชื่อเมนูแล้วกด Enter"
+              class="flex-1 h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10"
+              @keydown.enter.prevent="addDish">
+            <button
+              class="h-10 px-4 rounded-lg bg-[#F7F8F5] hover:bg-[#e8e9e3] text-[#6E8F72] text-sm font-medium transition-colors shrink-0"
+              @click="addDish">
+              เพิ่ม
+            </button>
+          </div>
+          <div v-if="dishNames.length" class="flex flex-wrap gap-1.5">
+            <span v-for="(dish, i) in dishNames" :key="i"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FBF1EC] text-[#c17a4f] text-xs font-medium">
+              {{ dish }}
+              <button class="hover:text-[#a0623d]" @click="removeDish(i)">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </span>
+          </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-1">ข้อความรีวิว (Review Comment)<span
-            class="text-red-400"
-          >*</span></label>
-          <textarea
-            v-model="form.reviewComment"
-            rows="3"
+              class="text-red-400">*</span></label>
+          <textarea v-model="form.reviewComment" rows="3"
             class="w-full p-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10"
-            placeholder="รสชาติเป็นยังไงบ้าง..."
-            @blur="form.reviewComment = form.reviewComment.trim()"
-          />
+            placeholder="รสชาติเป็นยังไงบ้าง..." @blur="form.reviewComment = form.reviewComment.trim()" />
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-[#8B9184] mb-2">รูปภาพอาหาร/เมนู (สูงสุด 3 รูป/Max 3 Images)</label>
+          <label class="block text-xs font-medium text-[#8B9184] mb-2">รูปภาพอาหาร/เมนู (สูงสุด 3 รูป/Max 3
+            Images)</label>
           <div class="flex gap-2 flex-wrap">
-            <div
-              v-for="(preview, i) in reviewImagePreviews"
-              :key="i"
-              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]"
-            >
-              <img
-                :src="preview"
-                class="w-full h-full object-cover"
-              >
-              <button
-                class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
-                @click="removeReviewImageAt(i)"
-              >
-                <svg
-                  class="w-3 h-3"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+            <div v-for="(preview, i) in reviewImagePreviews" :key="i"
+              class="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EEEFEA]">
+              <img :src="preview" class="w-full h-full object-cover">
+              <button class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
+                @click="removeReviewImageAt(i)">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <label
-              v-if="reviewImages.length < 3"
-              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]"
-            >
+            <label v-if="reviewImages.length < 3"
+              class="w-20 h-20 flex items-center justify-center rounded-lg border-2 border-dashed border-[#EEEFEA] cursor-pointer bg-[#F7F8F5] hover:bg-[#e8e9e3]">
               <span class="text-xs text-[#a3a79a]">+ เพิ่ม</span>
-              <input
-                type="file"
-                class="hidden"
-                accept="image/*"
-                multiple
-                @change="handleReviewFileChange"
-              >
+              <input type="file" class="hidden" accept="image/*" multiple @change="handleReviewFileChange">
             </label>
           </div>
         </div>
@@ -565,11 +488,9 @@ const handleSubmit = async () => {
     </div>
 
     <div class="p-5 border-t border-[#EEEFEA] bg-white">
-      <button
-        :disabled="isSubmitting"
+      <button :disabled="isSubmitting"
         class="w-full py-3 rounded-xl bg-[#6E8F72] hover:bg-[#5a765e] text-white font-medium text-sm transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-        @click="handleSubmit"
-      >
+        @click="handleSubmit">
         {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูลร้าน & รีวิว' }}
       </button>
     </div>

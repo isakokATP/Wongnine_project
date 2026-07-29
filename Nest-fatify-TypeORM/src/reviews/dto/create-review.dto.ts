@@ -42,6 +42,11 @@ export class CreateReviewDto {
   @IsString({ each: true })
   reviewImageUrls?: string[];
 
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  dishNames?: string[];
+
   @ValidateIf((o) => !o.restaurantId)
   @ValidateNested()
   @Type(() => CreateRestaurantDto)

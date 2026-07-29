@@ -17,5 +17,10 @@ export class UpdateReviewDto {
     @IsOptional()
     @IsArray()
     @IsString({ each: true })
+    dishNames?: string[];
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
     imageUrls?: string[];
 }

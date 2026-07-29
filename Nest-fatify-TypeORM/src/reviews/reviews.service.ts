@@ -30,7 +30,7 @@ export class ReviewsService {
   ) {}
 
 async create(createReviewDto: CreateReviewDto): Promise<Review> {
-    const { userId, comment, rating, restaurantId, newRestaurant, imageUrls } =
+    const { userId, comment, rating, restaurantId, newRestaurant, imageUrls, dishNames } =
       createReviewDto;
 
     const user = await this.userRepository.findOneBy({ id: userId });
@@ -65,6 +65,7 @@ async create(createReviewDto: CreateReviewDto): Promise<Review> {
     newReview.comment = comment;
     newReview.rating = rating;
     newReview.imageUrls = imageUrls || [];
+    newReview.dishNames = dishNames ?? null;
     newReview.user = user!;
     newReview.restaurant = targetRestaurant;
 
@@ -113,7 +114,7 @@ async create(createReviewDto: CreateReviewDto): Promise<Review> {
   // }
 
   async update(id: number, updateReviewDto: UpdateReviewDto): Promise<Review> {
-    const { userId, comment, rating, imageUrls } = updateReviewDto;
+    const { userId, comment, rating, imageUrls, dishNames } = updateReviewDto;
 
     const review = await this.reviewRepository.findOne({
       where: { id },
@@ -135,6 +136,8 @@ async create(createReviewDto: CreateReviewDto): Promise<Review> {
     if (imageUrls !== undefined) {
       review.imageUrls = imageUrls;
     }
+
+    if (dishNames !== undefined) review.dishNames = dishNames ?? null;
 
     let isRatingChanged = false;
     if (rating !== undefined && Number(review.rating) !== rating) {

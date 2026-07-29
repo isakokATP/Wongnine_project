@@ -16,6 +16,9 @@ export class Review {
     @Column({ type: 'simple-array', nullable: true })
     imageUrls: string[];
 
+    @Column({ type: 'simple-array', nullable: true })
+    dishNames: string[] | null;
+
     @CreateDateColumn()
     createdAt: Date;
 

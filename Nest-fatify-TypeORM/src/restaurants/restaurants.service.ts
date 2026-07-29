@@ -69,7 +69,7 @@ export class RestaurantsService {
 // }
 
 async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
-    const { reviewUserId, reviewRating, reviewComment, reviewImageUrls, ...restaurantData } =
+    const { reviewUserId, reviewRating, reviewComment, reviewImageUrls, reviewDishNames, ...restaurantData } =
       createRestaurantDto;
 
     if (reviewUserId) {
@@ -111,6 +111,7 @@ async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
         rating: reviewRating,
         comment: reviewComment,
         imageUrls: reviewImageUrls,
+        dishNames: reviewDishNames,
       });
     }
 

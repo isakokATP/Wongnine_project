@@ -1,6 +1,8 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 
+const { success, error: showError } = useAppToast()
+const { confirm } = useConfirm()
 const config = useRuntimeConfig()
 const { currentUser, apiFetch } = useAuth()
 
@@ -15,7 +17,9 @@ const emit = defineEmits(['close', 'updated'])
 const reviews = ref([])
 const isLoading = ref(false)
 const isSubmitting = ref(false)
-const editingReviewId = ref(null) // null = โหมดเขียนใหม่, มีค่า = กำลังแก้ไขรีวิวนี้
+const editingReviewId = ref(null)
+const dishNames = ref([])
+const dishInput = ref('')
 
 const MAX_IMAGES = 3
 const reviewImages = ref([])
@@ -27,11 +31,26 @@ const form = reactive({
     comment: ''
 })
 
-// รีวิวของ user คนปัจจุบัน (ถ้ามี) — ใช้เช็คว่าควรโชว์ฟอร์มเขียนใหม่ หรือปุ่มแก้ไข
+
 const myReview = computed(() => {
     if (!currentUser.value) return null
     return reviews.value.find(r => r.user?.id === currentUser.value.id) || null
 })
+
+const addDish = () => {
+    const trimmed = dishInput.value.trim()
+    if (!trimmed) return
+    if (dishNames.value.includes(trimmed)) {
+        dishInput.value = ''
+        return
+    }
+    dishNames.value.push(trimmed)
+    dishInput.value = ''
+}
+
+const removeDish = (index) => {
+    dishNames.value.splice(index, 1)
+}
 
 const isEditing = computed(() => editingReviewId.value !== null)
 
@@ -46,6 +65,8 @@ const resetForm = () => {
     form.rating = 5
     form.comment = ''
     editingReviewId.value = null
+    dishNames.value = []
+    dishInput.value = ''
     resetImageState()
 }
 
@@ -128,6 +149,7 @@ const startEdit = (review) => {
     editingReviewId.value = review.id
     form.rating = Number(review.rating)
     form.comment = review.comment
+    dishNames.value = [...(review.dishNames || [])]
     existingImageUrls.value = [...(review.imageUrls || [])]
     reviewImages.value = []
     reviewImagePreviews.value = []
@@ -138,17 +160,18 @@ const cancelEdit = () => {
 }
 
 const handleSubmit = async () => {
+    console.log(useAppToast())
     if (isSubmitting.value) return
 
     if (!currentUser.value) {
-        alert('กรุณาเข้าสู่ระบบก่อนเขียนรีวิว')
+        showError('กรุณาเข้าสู่ระบบก่อนเขียนรีวิว')
         navigateTo('/login')
         return
     }
 
     form.comment = form.comment.trim()
-    if (!form.comment) return alert('กรุณากรอกข้อความรีวิว')
-    if (!form.rating || form.rating < 1 || form.rating > 5) return alert('กรุณาให้คะแนนระหว่าง 1-5')
+    if (!form.comment) return showError('กรุณากรอกข้อความรีวิว')
+    if (!form.rating || form.rating < 1 || form.rating > 5) return showError('กรุณาให้คะแนนระหว่าง 1-5')
 
     isSubmitting.value = true
 
@@ -163,7 +186,8 @@ const handleSubmit = async () => {
                     userId: currentUser.value.id,
                     rating: Number(form.rating),
                     comment: form.comment,
-                    imageUrls: finalImageUrls
+                    imageUrls: finalImageUrls,
+                    dishNames: dishNames.value   // เพิ่มบรรทัดนี้
                 }
             })
         } else {
@@ -173,7 +197,8 @@ const handleSubmit = async () => {
                     userId: currentUser.value.id,
                     rating: Number(form.rating),
                     comment: form.comment,
-                    imageUrls: finalImageUrls
+                    imageUrls: finalImageUrls,
+                    dishNames: dishNames.value   // เพิ่มบรรทัดนี้
                 }
             })
         }
@@ -181,28 +206,28 @@ const handleSubmit = async () => {
         resetForm()
         await fetchReviews()
         emit('updated')
+        success(isEditing.value ? 'แก้ไขรีวิวสำเร็จ' : 'ส่งรีวิวสำเร็จ')
     } catch (err) {
         console.error('Review submit error:', err)
-        alert(err.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
+        showError(err.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
     } finally {
         isSubmitting.value = false
     }
 }
 
 const handleDelete = async (review) => {
-    if (!confirm('ต้องการลบรีวิวนี้ใช่ไหม?')) return
+    const ok = await confirm('ต้องการลบรีวิวนี้ใช่ไหม?', { title: 'ลบรีวิว' })
+    if (!ok) return
 
     try {
-        await apiFetch(`/reviews/${review.id}`, {
-            method: 'DELETE',
-            body: { userId: currentUser.value.id }
-        })
+        await apiFetch(`/reviews/${review.id}`, { method: 'DELETE', body: { userId: currentUser.value.id } })
         resetForm()
         await fetchReviews()
         emit('updated')
+        success('ลบรีวิวสำเร็จ')
     } catch (err) {
         console.error('Delete review error:', err)
-        alert(err.data?.message || 'ลบรีวิวไม่สำเร็จ')
+        showError(err.data?.message || 'ลบรีวิวไม่สำเร็จ')
     }
 }
 
@@ -240,7 +265,6 @@ const formatDate = (dateStr) => {
             </div>
 
             <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5 nice-scroll">
-                <!-- ฟอร์มเขียน/แก้ไขรีวิว -->
                 <div v-if="!myReview || isEditing" class="space-y-3 pb-4 border-b border-[#EEEFEA]">
                     <h3 class="text-sm font-semibold text-[#6E8F72]">
                         {{ isEditing ? 'แก้ไขรีวิวของคุณ' : 'เขียนรีวิวของคุณ' }}
@@ -250,6 +274,32 @@ const formatDate = (dateStr) => {
                         <label class="block text-xs font-medium text-[#8B9184] mb-1">คะแนน (1-5 ดาว)</label>
                         <input v-model="form.rating" type="number" min="1" max="5" step="0.5"
                             class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-[#8B9184] mb-1">เมนูที่สั่ง (ถ้ามี)</label>
+                        <div class="flex gap-2 mb-2">
+                            <input v-model="dishInput" type="text" placeholder="พิมพ์ชื่อเมนูแล้วกด Enter"
+                                class="flex-1 h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#E0A06E]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E0A06E]/10"
+                                @keydown.enter.prevent="addDish">
+                            <button
+                                class="h-10 px-4 rounded-lg bg-[#F7F8F5] hover:bg-[#e8e9e3] text-[#6E8F72] text-sm font-medium transition-colors shrink-0"
+                                @click="addDish">
+                                เพิ่ม
+                            </button>
+                        </div>
+                        <div v-if="dishNames.length" class="flex flex-wrap gap-1.5">
+                            <span v-for="(dish, i) in dishNames" :key="i"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FBF1EC] text-[#c17a4f] text-xs font-medium">
+                                {{ dish }}
+                                <button class="hover:text-[#a0623d]" @click="removeDish(i)">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </span>
+                        </div>
                     </div>
 
                     <div>
@@ -333,6 +383,12 @@ const formatDate = (dateStr) => {
                     <p class="text-sm text-[#31352D]">
                         {{ myReview.comment }}
                     </p>
+                    <div v-if="myReview.dishNames?.length" class="flex flex-wrap gap-1.5">
+                        <span v-for="(dish, i) in myReview.dishNames" :key="i"
+                            class="px-2 py-0.5 rounded-full bg-white text-[#c17a4f] text-[11px] font-medium">
+                            🍽️ {{ dish }}
+                        </span>
+                    </div>
                 </div>
 
                 <!-- ลิสต์รีวิวทั้งหมด -->
@@ -364,6 +420,12 @@ const formatDate = (dateStr) => {
                         <p class="text-sm text-[#31352D] leading-relaxed">
                             {{ review.comment }}
                         </p>
+                        <div v-if="review.dishNames?.length" class="flex flex-wrap gap-1.5 pt-1">
+                            <span v-for="(dish, i) in review.dishNames" :key="i"
+                                class="px-2 py-0.5 rounded-full bg-[#F7F8F5] text-[#6E8F72] text-[11px] font-medium">
+                                🍽️ {{ dish }}
+                            </span>
+                        </div>
                         <div v-if="review.imageUrls?.length" class="flex gap-2 flex-wrap pt-1">
                             <img v-for="(url, i) in review.imageUrls" :key="i" :src="`${config.public.apiBase}${url}`"
                                 class="w-16 h-16 rounded-lg object-cover border border-[#EEEFEA]">
