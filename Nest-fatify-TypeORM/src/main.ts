@@ -9,8 +9,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
-    origin: 'http://localhost:3000', // origin ของ Nuxt frontend ตรงๆ (ใช้ '*' ไม่ได้ตอนเปิด credentials)
-    credentials: true,               // อนุญาตให้แนบ/รับ cookie ข้าม origin
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
   });
 
   app.use(cookieParser());
