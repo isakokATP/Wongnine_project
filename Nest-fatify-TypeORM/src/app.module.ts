@@ -9,13 +9,15 @@ import { AuthModule } from './auth/auth.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'Mypass123',
-      database: 'Wongnine',
+      url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
+      ssl:
+        process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
+      migrations: ['dist/migrations/*.js'],
+      migrationsRun: process.env.NODE_ENV === 'production', // รัน migration อัตโนมัติตอน production start
     }),
     UsersModule,
     RestaurantsModule,
