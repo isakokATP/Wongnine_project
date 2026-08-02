@@ -314,7 +314,7 @@ const formatDate = (dateStr) => {
                         <div class="flex gap-2 flex-wrap">
                             <div v-for="(url, i) in existingImageUrls" :key="`existing-${i}`"
                                 class="relative w-16 h-16 rounded-lg overflow-hidden border border-[#EEEFEA]">
-                                <img :src="`${config.public.apiBase}${url}`" class="w-full h-full object-cover">
+                                <img :src="url" class="w-full h-full object-cover">
                                 <button class="absolute top-0.5 right-0.5 bg-white/90 text-red-500 rounded-full p-0.5"
                                     @click="removeExistingImageAt(i)">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

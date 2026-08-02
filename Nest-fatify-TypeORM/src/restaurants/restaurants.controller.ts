@@ -12,7 +12,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
-  UploadedFiles
+  UploadedFiles,
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
@@ -20,15 +20,14 @@ import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { CreateReviewDto } from '../reviews/dto/create-review.dto';
 import { ReviewsService } from '../reviews/reviews.service';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { CreateReviewForRestaurantDto } from '../reviews/dto/create-review-for-restaurant.dto';
-
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Controller('restaurants') // http://localhost:3000/restaurants
 export class RestaurantsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
+    private readonly cloudinaryService: CloudinaryService,
 
     @Inject(forwardRef(() => ReviewsService))
     private readonly reviewsService: ReviewsService,
@@ -57,16 +56,16 @@ export class RestaurantsController {
     return await this.restaurantsService.delete(id);
   }
 
-@Post(':id/reviews')
-async createReview(
-  @Param('id', ParseIntPipe) id: number,
-  @Body() createReviewDto: CreateReviewForRestaurantDto,
-) {
-  return await this.reviewsService.create({
-    ...createReviewDto,
-    restaurantId: id,
-  });
-}
+  @Post(':id/reviews')
+  async createReview(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() createReviewDto: CreateReviewForRestaurantDto,
+  ) {
+    return await this.reviewsService.create({
+      ...createReviewDto,
+      restaurantId: id,
+    });
+  }
 
   @Get()
   findAll(
@@ -125,22 +124,9 @@ async createReview(
   // }
 
   @Post('upload-images')
-  @UseInterceptors(
-    FilesInterceptor('files', 3, {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          callback(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-    }),
-  )
-  uploadImages(@UploadedFiles() files: Express.Multer.File[]) {
-    return {
-      imageUrls: files.map((file) => `/uploads/${file.filename}`),
-    };
+  @UseInterceptors(FilesInterceptor('files', 3)) // ไม่ต้องมี storage config แล้ว ใช้ default memoryStorage
+  async uploadImages(@UploadedFiles() files: Express.Multer.File[]) {
+    const imageUrls = await this.cloudinaryService.uploadImages(files);
+    return { imageUrls };
   }
 }
