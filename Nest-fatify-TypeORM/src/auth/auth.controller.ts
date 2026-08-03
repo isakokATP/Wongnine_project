@@ -25,24 +25,26 @@ const REFRESH_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   private setCookies(res: Response, accessToken: string, refreshToken: string) {
+    const isProduction = process.env.NODE_ENV === 'production';
+
     res.cookie(ACCESS_COOKIE, accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: ACCESS_MAX_AGE,
     });
     res.cookie(REFRESH_COOKIE, refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: REFRESH_MAX_AGE,
-      path: '/auth', // /auth only, so it won't be sent with requests to other paths
+      path: '/auth',
     });
   }
-  
+
   // Login, Register, Refresh, Logout, GetMe, VerifyEmail, ResendVerification
   @Post('register')
   async register(
@@ -132,7 +134,7 @@ export class AuthController {
 
   @Get('microsoft')
   @UseGuards(MicrosoftAuthGuard)
-  async microsoftAuth() {}
+  async microsoftAuth() { }
 
   @Get('microsoft/callback')
   @UseGuards(MicrosoftAuthGuard)
