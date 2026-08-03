@@ -15,7 +15,9 @@ export class MailService {
     console.log('GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'มีรหัส (Loaded)' : 'ไม่มีรหัส (Undefined)');
     console.log('---------------------------');
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_APP_PASSWORD,
