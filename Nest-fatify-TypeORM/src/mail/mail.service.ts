@@ -16,19 +16,21 @@ export class MailService {
     console.log('---------------------------');
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
+      requireTLS: true,
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_APP_PASSWORD,
       },
+      family: 4,
     });
   }
 
   async sendVerificationEmail(toEmail: string, name: string, token: string) {
     const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
     const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
-    
+
     try {
       await this.transporter.sendMail({
         from: `"Wong Nine" <${process.env.GMAIL_USER}>`,
