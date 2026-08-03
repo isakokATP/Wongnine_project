@@ -427,7 +427,7 @@ const formatDate = (dateStr) => {
                             </span>
                         </div>
                         <div v-if="review.imageUrls?.length" class="flex gap-2 flex-wrap pt-1">
-                            <img v-for="(url, i) in review.imageUrls" :key="i" :src="`${config.public.apiBase}${url}`"
+                            <img v-for="(url, i) in review.imageUrls" :key="i" :src="url"
                                 class="w-16 h-16 rounded-lg object-cover border border-[#EEEFEA]">
                         </div>
                     </div>
