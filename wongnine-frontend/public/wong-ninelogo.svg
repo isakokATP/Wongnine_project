@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <!-- 1. กรอบสีดำด้านนอกสุด (8-bit Rounded Border) -->
+  <rect x="1" y="0" width="14" height="16" fill="#31352D" />
+  <rect x="0" y="1" width="16" height="14" fill="#31352D" />
+  
+  <!-- 2. พื้นหลังสีเขียว Wong Nine -->
+  <rect x="2" y="1" width="12" height="14" fill="#6E8F72" />
+  <rect x="1" y="2" width="14" height="12" fill="#6E8F72" />
+  
+  <!-- 3. แสงและเงาขอบปุ่ม (ทำให้ดูนูนขึ้นมาแบบปุ่มเกมตู้) -->
+  <!-- แสงสว่างตกกระทบมุมซ้ายบน -->
+  <rect x="2" y="1" width="12" height="1" fill="#FFFFFF" opacity="0.4" />
+  <rect x="1" y="2" width="1" height="12" fill="#FFFFFF" opacity="0.4" />
+  <rect x="2" y="2" width="1" height="1" fill="#FFFFFF" opacity="0.4" />
+  
+  <!-- เงามืดตกกระทบมุมขวาล่าง -->
+  <rect x="2" y="14" width="12" height="1" fill="#000000" opacity="0.25" />
+  <rect x="14" y="2" width="1" height="12" fill="#000000" opacity="0.25" />
+  <rect x="13" y="13" width="1" height="1" fill="#000000" opacity="0.25" />
+
+  <!-- 4. ตัวอักษร W9 แบบ Pixel Art -->
+  <defs>
+    <g id="w9-text">
+      <!-- จุดพิกเซลของตัว W -->
+      <rect x="3" y="4" width="1" height="6" />
+      <rect x="4" y="10" width="1" height="1" />
+      <rect x="5" y="8" width="1" height="2" />
+      <rect x="6" y="10" width="1" height="1" />
+      <rect x="7" y="4" width="1" height="6" />
+      
+      <!-- จุดพิกเซลของตัว 9 -->
+      <rect x="10" y="4" width="2" height="1" />
+      <rect x="9" y="5" width="1" height="2" />
+      <rect x="12" y="5" width="1" height="2" />
+      <rect x="10" y="7" width="3" height="1" />
+      <rect x="12" y="8" width="1" height="2" />
+      <rect x="9" y="9" width="1" height="1" />
+      <rect x="10" y="10" width="2" height="1" />
+    </g>
+  </defs>
+  
+  <!-- พิมพ์เงาสีเทาเข้มของตัวหนังสือให้อยู่ด้านหลังและเยื้องขวาล่าง -->
+  <use href="#w9-text" x="1" y="1" fill="#31352D" />
+  <!-- พิมพ์ตัวอักษรสีขาวทับด้านหน้า -->
+  <use href="#w9-text" x="0" y="0" fill="#FFFFFF" />
+</svg>

@@ -7,6 +7,13 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   app: {
+    head: {
+      title: 'Wong Nine',
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/wong-ninelogo.svg' },
+        { rel: 'alternate icon', type: 'image/png', href: '/wong-ninelogo.png' }
+      ]
+    }
   },
 
   css: ['~/assets/css/main.css'],
