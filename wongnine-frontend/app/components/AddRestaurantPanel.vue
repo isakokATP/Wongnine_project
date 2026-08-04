@@ -343,12 +343,6 @@ const handleSubmit = async () => {
             <input v-model="form.closeTime" type="time"
               class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
           </div>
-          <div class="grid grid-cols-2 gap-3 mb-3">
-            <input v-model="form.openTime" type="time"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
-            <input v-model="form.closeTime" type="time"
-              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
-          </div>
         </div>
 
         <div>
