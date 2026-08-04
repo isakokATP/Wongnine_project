@@ -477,7 +477,9 @@ watch(isAddMode, (newVal) => {
           <InfoWindow v-if="activeRestaurant"
             :options="{ position: activeInfoPosition, pixelOffset: { width: 0, height: -46 } }"
             @closeclick="activeRestaurantId = null">
-            <div class="font-['Prompt'] px-1 py-1 min-w-[170px]">
+            <div class="font-['Prompt'] px-1 py-1 min-w-[190px] max-w-[220px]">
+              <img v-if="activeRestaurant.imageUrls?.length" :src="activeRestaurant.imageUrls[0]"
+                class="w-full h-28 object-cover rounded-lg mb-2">
               <h3 class="text-sm font-medium text-[#31352D] mb-1.5">
                 {{ activeRestaurant.name }}
               </h3>
@@ -497,18 +499,24 @@ watch(isAddMode, (newVal) => {
                 </svg>
                 <span class="text-xs font-medium text-[#8B9184]">{{ activeRestaurant.rating || 'New' }}</span>
               </div>
+              <div class="flex flex-col gap-1.5 mt-2">
+                <a
+                  v-if="activeRestaurant.googleMapsUrl"
+                  :href="activeRestaurant.googleMapsUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 text-xs font-medium text-[#4A90E2] hover:text-[#3a7bc8] hover:underline"
+                >
+                  เปิดใน Google Maps
+                </a>
 
-              <a v-if="activeRestaurant.googleMapsUrl" :href="activeRestaurant.googleMapsUrl" target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-1 text-xs font-medium text-[#4A90E2] hover:text-[#3a7bc8] hover:underline">
-                เปิดใน Google Maps
-              </a>
-
-              <span
-                class="mt-3 inline-block text-xs font-medium text-[#6E8F72] hover:text-[#5a765e] hover:underline cursor-pointer"
-                @click.stop="openReviewsPanel(activeRestaurant)">
-                ดูรีวิว / เขียนรีวิว
-              </span>
+                <span
+                  class="inline-block text-xs font-medium text-[#6E8F72] hover:text-[#5a765e] hover:underline cursor-pointer"
+                  @click.stop="openReviewsPanel(activeRestaurant)"
+                >
+                  ดูรีวิว / เขียนรีวิว
+                </span>
+              </div>
             </div>
           </InfoWindow>
         </GoogleMap>
