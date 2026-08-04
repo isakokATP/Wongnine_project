@@ -1,29 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
-import * as dotenv from 'dotenv';
-dotenv.config();
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter;
+  private resend: Resend;
 
   constructor() {
-
     console.log('--- ตรวจสอบการตั้งค่าอีเมล ---');
-    console.log('GMAIL_USER:', process.env.GMAIL_USER);
-    console.log('GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'มีรหัส (Loaded)' : 'ไม่มีรหัส (Undefined)');
+    console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'มีรหัส (Loaded)' : 'ไม่มีรหัส (Undefined)');
     console.log('---------------------------');
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
+
+    this.resend = new Resend(process.env.RESEND_API_KEY);
   }
 
   async sendVerificationEmail(toEmail: string, name: string, token: string) {
@@ -31,8 +19,8 @@ export class MailService {
     const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
 
     try {
-      await this.transporter.sendMail({
-        from: `"Wong Nine" <${process.env.GMAIL_USER}>`,
+      await this.resend.emails.send({
+        from: 'Wong Nine <onboarding@resend.dev>',
         to: toEmail,
         subject: 'ยืนยันอีเมลของคุณ - Wong Nine',
         html: `
