@@ -552,4 +552,13 @@ watch(isAddMode, (newVal) => {
 .nice-scroll::-webkit-scrollbar-thumb:hover {
   background: #d9dcd2;
 }
+
+.gm-style-iw-ch {
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+}
+
+.gm-style-iw-c {
+  padding-top: 12px !important;
+}
 </style>
