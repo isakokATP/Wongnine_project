@@ -168,6 +168,7 @@ const handleSubmit = async () => {
   if (!form.minPrice || !form.maxPrice) return showError('กรุณาระบุช่วงราคา')
   if (Number(form.minPrice) > Number(form.maxPrice)) return showError('ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด')
   if (!form.openTime || !form.closeTime) return showError('กรุณาระบุเวลาเปิด-ปิดร้าน')
+  if (form.openTime >= form.closeTime) return showError('เวลาปิดต้องมากกว่าเวลาเปิด')
   if (!form.latitude || !form.longitude) return showError('กรุณาจิ้มเลือกพิกัดร้านบนแผนที่')
   if (!form.reviewComment) return showError('กรุณากรอกข้อความรีวิว')
   if (!form.reviewRating || form.reviewRating < 1 || form.reviewRating > 5) {
@@ -329,13 +330,19 @@ const handleSubmit = async () => {
 
         <div>
           <label class="black text-xs font-medium text-[#8B9184] mb-1">จำนวนที่นั่ง (Capacity)</label>
-          <input v-model="form.capacity" type="number" min="0" placeholder="เช่นรองรับได้เยอะสุดจำนวน20คน"
+          <input v-model="form.capacity" type="number" min="0" placeholder="กรอกจำนวนคนต่อโต๊ะ เช่น 4คนต่อ1โต๊ะ"
             class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-[#8B9184] mb-2">เวลาเปิด - ปิด (Opening - Closing Hours) <span
               class="text-red-400">*</span></label>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <input v-model="form.openTime" type="time"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
+            <input v-model="form.closeTime" type="time"
+              class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
+          </div>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <input v-model="form.openTime" type="time"
               class="w-full h-10 px-3 rounded-lg bg-[#F7F8F5] text-sm text-[#31352D] border border-transparent focus:border-[#6E8F72]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6E8F72]/10">
